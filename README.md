@@ -12,7 +12,7 @@ graph LR
 ```
 
 ## avformat头文件
-```
+```mermaid
 graph LR
 
     avformat.h --> AVFormatContext
@@ -26,7 +26,7 @@ graph LR
 ```
 
 ## avcodec头文件
-```
+```mermaid
 graph LR
 
     codec_par.h --> AVCodecParameters
