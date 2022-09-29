@@ -13,7 +13,7 @@ graph LR
 
 ## avformat头文件
 ```
-flowchart LR
+graph LR
 
     avformat.h --> AVFormatContext
     avformat.h --> AVInputFormat
@@ -27,7 +27,7 @@ flowchart LR
 
 ## avcodec头文件
 ```
-flowchart LR
+graph LR
 
     codec_par.h --> AVCodecParameters
 ```
