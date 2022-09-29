@@ -3,7 +3,7 @@
 ## 结构体之间的关系
 
 ```
-flowchart LR
+graph LR
 
     AVFormatContext --> AVIOContext --> URLContext --> URLProtocol
     AVFormatContext --> AVInputFormat 
