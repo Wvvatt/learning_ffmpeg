@@ -17,5 +17,5 @@ hello:hello.o
 
 .PHONY:clean
 clean:
-	rm -rf decoder *.o
+	rm -rf decoder hello *.o
 
