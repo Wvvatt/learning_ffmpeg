@@ -1,4 +1,4 @@
-# learingFFmpeg
+# learing FFmpeg
 
 ## 结构体之间的关系
 
