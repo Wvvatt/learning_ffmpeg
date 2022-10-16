@@ -1,21 +1,24 @@
-FLAG=-g -std=c++11
-INCLUDE=-I../deps/include
+CXX=g++
+FLAG=-std=c++11 -g -Wall
+DEP_INCLUDE=-I../deps/include
 DEP_LIB=-L../deps/lib -lavformat -lavcodec -lavutil -Wl,-rpath-link=../deps/lib
-CPPSRC=$(foreach TMP_SRC_DIRS, ., $(wildcard $(TMP_SRC_DIRS)/*.cc))
-CPPOBJ:=$(CPPSRC:.cc=.o)
 
-all:decoder
+SOURCE = $(wildcard *.cc)
+OBJS = $(patsubst %.cc,%.o,${SOURCE})
+TARGETS = $(patsubst %.o,%,${OBJS})
 
-decoder:decoder.o
-	g++ $^ $(FLAG) $(DEP_LIB) -o $@
+$(info $(OBJS))
+$(info $(TARGETS))
 
-hello:hello.o
-	g++ $^ $(FLAG) $(DEP_LIB) -o $@
+all:${TARGETS}
+
+${TARGETS}:%:%.o
+	$(CXX) $(FLAG) $(DEP_LIB) -o $@ $<
 
 %.o:%.cc
-	g++ -std=c++11 $(FLAG) $(INCLUDE) -c $< -o $@
+	$(CXX) $(FLAG) $(DEP_INCLUDE) -c -o $@ $<
 
 .PHONY:clean
 clean:
-	rm -rf decoder hello *.o
+	rm -rf *.o $(TARGETS)
 
