@@ -13,7 +13,7 @@ $(info $(TARGETS))
 all:${TARGETS}
 
 ${TARGETS}:%:%.o
-	$(CXX) $(FLAG) $(DEP_LIB) -o $@ $<
+	$(CXX) $(FLAG) -o $@ $< $(DEP_LIB)
 
 %.o:%.cc
 	$(CXX) $(FLAG) $(DEP_INCLUDE) -c -o $@ $<

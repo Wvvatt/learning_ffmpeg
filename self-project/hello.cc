@@ -16,7 +16,7 @@ extern "C"
 static void logging(const char *fmt, ...)
 {
     va_list args;
-    fprintf( stderr, "LOG: [%s:%d] ", __FILE__,  __LINE__);
+    fprintf( stderr, "LOG: ");
     va_start( args, fmt );
     vfprintf( stderr, fmt, args );
     va_end( args );
@@ -25,6 +25,9 @@ static void logging(const char *fmt, ...)
 
 static int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame);
 static void save_gray_frame(unsigned char *buf, int wrap, int xsize, int ysize, char *filename);
+
+char av_error[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+#define av_err2str(errnum) av_make_error_string(av_error, AV_ERROR_MAX_STRING_SIZE, errnum)
 
 int main(int argc, char** argv)
 {
@@ -46,7 +49,7 @@ int main(int argc, char** argv)
     const AVCodecParameters *video_codec_par = nullptr;
     const AVCodec *video_codec = nullptr;
     int video_index = -1;
-    for (int i = 0; i < av_fmt_ctx->nb_streams; i++)
+    for (uint32_t i = 0; i < av_fmt_ctx->nb_streams; i++)
     {
         AVCodecParameters *local_codec_par = av_fmt_ctx->streams[i]->codecpar;
         const AVCodec *local_codec = avcodec_find_decoder(local_codec_par->codec_id);
@@ -63,7 +66,7 @@ int main(int argc, char** argv)
             logging("Video Codec: resolution %d x %d", local_codec_par->width, local_codec_par->height);
         }
         else if(local_codec_par->codec_type == AVMEDIA_TYPE_AUDIO){
-            logging("Audio Codec: %d channels, sample rate %d", local_codec_par->channels, local_codec_par->sample_rate);
+            logging("Audio Codec: %d channels, sample rate %d", local_codec_par->ch_layout.nb_channels, local_codec_par->sample_rate);
         }
         logging("\tCodec %s ID %d bit_rate %lld", local_codec->long_name, local_codec->id, local_codec_par->bit_rate);
     }
