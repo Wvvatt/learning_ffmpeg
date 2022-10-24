@@ -100,7 +100,7 @@ int main(int argc, char** argv)
     }
 
     int ret = 0;
-    int how_many_packets_to_process = 8;
+    int how_many_packets_to_process = 5;
     while(av_read_frame(av_fmt_ctx, packet) >= 0){
         if(packet->stream_index == video_index){
             logging("AVPacket->pts = %ld", packet->pts);
