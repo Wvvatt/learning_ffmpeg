@@ -30,4 +30,5 @@ graph LR
 graph LR
 
     codec_par.h --> AVCodecParameters
+    avcodec.h --> AVCodecContext
 ```

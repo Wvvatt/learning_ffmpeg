@@ -27,7 +27,7 @@ static int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFra
 static void save_gray_frame(unsigned char *buf, int wrap, int xsize, int ysize, char *filename);
 
 char av_error[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-#define av_err2str(errnum) av_make_error_string(av_error, AV_ERROR_MAX_STRING_SIZE, errnum)
+#define err2str(errnum) av_make_error_string(av_error, AV_ERROR_MAX_STRING_SIZE, errnum)
 
 int main(int argc, char** argv)
 {
@@ -118,7 +118,7 @@ static int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFra
 {
   int response = avcodec_send_packet(pCodecContext, pPacket);
   if (response < 0) {
-    logging("Error while sending a packet to the decoder: %s", av_err2str(response));
+    logging("Error while sending a packet to the decoder: %s", err2str(response));
     return response;
   }
   while (response >= 0)
@@ -128,7 +128,7 @@ static int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFra
     if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
       break;
     } else if (response < 0) {
-      logging("Error while receiving a frame from the decoder: %s", av_err2str(response));
+      logging("Error while receiving a frame from the decoder: %s", err2str(response));
       return response;
     }
 
