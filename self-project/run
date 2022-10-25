@@ -1,0 +1,21 @@
+#!/bin/bash
+
+case "$1" in
+	hello)
+	LD_LIBRARY_PATH=../deps/lib ./hello ${@:2}
+	;;
+	remuxer)
+	LD_LIBRARY_PATH=../deps/lib ./remuxer ${@:2}
+	;;
+	decoder)
+	LD_LIBRARY_PATH=../deps/lib ./decoder ${@:2}
+	;;
+	clear)
+	rm *.flv *.mp4 *.pgm -f
+	;;
+    *)
+	echo "Usage: run.sh {start|clear} "
+	exit 1
+esac
+
+exit $?

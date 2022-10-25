@@ -14,6 +14,7 @@ all:${TARGETS}
 
 ${TARGETS}:%:%.o
 	$(CXX) $(FLAG) -o $@ $< $(DEP_LIB)
+	rm *.o -f
 
 %.o:%.cc
 	$(CXX) $(FLAG) $(DEP_INCLUDE) -c -o $@ $<
