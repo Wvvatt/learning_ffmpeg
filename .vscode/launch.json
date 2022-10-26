@@ -9,8 +9,15 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/self-project/hello",
-            "args": ["${fileDirname}/h264_aac_2.6M_dance.ts"],
-            "environment": [{"name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/deps/lib"}],
+            "args": [
+                "${fileDirname}/h264_aac_2.6M_dance.ts"
+            ],
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/deps/lib"
+                }
+            ],
             "cwd": "${workspaceFolder}"
         },
         {
@@ -18,8 +25,37 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/self-project/decoder",
-            "args": ["${fileDirname}/h264_aac_2.6M_dance.ts"],
-            "environment": [{"name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/deps/lib"}],
+            "args": [
+                "${fileDirname}/h264_aac_2.6M_dance.ts"
+            ],
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/deps/lib"
+                }
+            ],
+            "cwd": "${workspaceFolder}/self-project"
+        },
+        {
+            "name": "gdb-transcode",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/self-project/transcode",
+            "args": [
+                "-i",
+                "${fileDirname}/h264_aac_2.6M_dance.ts",
+                "--vcodec",
+                "h265",
+                "--acodec",
+                "aac",
+                "-o ${fileDirname}/transcode.ts"
+            ],
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/deps/lib"
+                }
+            ],
             "cwd": "${workspaceFolder}/self-project"
         }
     ]
