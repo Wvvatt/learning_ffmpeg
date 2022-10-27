@@ -10,6 +10,9 @@ case "$1" in
 	decoder)
 	LD_LIBRARY_PATH=../deps/lib ./decoder ${@:2}
 	;;
+	transcode)
+	LD_LIBRARY_PATH=../deps/lib ./transcode ${@:2}
+	;;
 	clear)
 	rm *.flv *.mp4 *.pgm -f
 	;;

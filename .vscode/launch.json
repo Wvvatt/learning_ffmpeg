@@ -44,11 +44,12 @@
             "args": [
                 "-i",
                 "${fileDirname}/h264_aac_2.6M_dance.ts",
-                "--vcodec",
-                "h265",
-                "--acodec",
-                "aac",
-                "-o ${fileDirname}/transcode.ts"
+                // "--vcodec",
+                // "h265",
+                // "--acodec",
+                // "aac",
+                "-o",
+                "${fileDirname}/trans.ts"
             ],
             "environment": [
                 {
