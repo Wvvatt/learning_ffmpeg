@@ -58,6 +58,28 @@
                 }
             ],
             "cwd": "${workspaceFolder}/self-project"
+        },
+        {
+            "name": "gdb-ffmpeg",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/ffmpeg",
+            "args": [
+                "-i",
+                "${workspaceFolder}/self-project/h264_aac_2.6M_dance.ts",
+                "-vcodec",
+                "h264",
+                "-acodec",
+                "copy",
+                "${workspaceFolder}/trans.ts"
+            ],
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/build/lib"
+                }
+            ],
+            "cwd": "${workspaceFolder}/self-project"
         }
     ]
 }

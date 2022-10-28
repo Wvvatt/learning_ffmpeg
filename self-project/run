@@ -1,17 +1,19 @@
 #!/bin/bash
 
+export LD_LIBRARY_PATH=`pwd`/../build/lib:`pwd`../x264/lib
+
 case "$1" in
 	hello)
-	LD_LIBRARY_PATH=../build/lib ./hello ${@:2}
+	./hello ${@:2}
 	;;
 	remuxer)
-	LD_LIBRARY_PATH=../build/lib ./remuxer ${@:2}
+	./remuxer ${@:2}
 	;;
 	decoder)
-	LD_LIBRARY_PATH=../build/lib ./decoder ${@:2}
+	./decoder ${@:2}
 	;;
 	transcode)
-	LD_LIBRARY_PATH=../build/lib ./transcode ${@:2}
+	./transcode ${@:2}
 	;;
 	clear)
 	rm *.flv *.mp4 *.pgm -f
