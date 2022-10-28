@@ -122,12 +122,12 @@ bool FormatContext::FillDecoder(AVStream *stream)
 // copy不需要AVCodecContext
 bool FormatContext::FillEncoderCopyFrom(AVStream *in_stream)
 {
-    if (in_stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && !v_stream_ctx.stream)
+    if (in_stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
     {
         v_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
         v_stream_ctx.FillEncoderCopyFrom(in_stream->codecpar);
     }
-    if (in_stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && !a_stream_ctx.stream)
+    if (in_stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
     {
         a_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
         a_stream_ctx.FillEncoderCopyFrom(in_stream->codecpar);
@@ -139,19 +139,26 @@ bool FormatContext::FillEncoderCopyFrom(AVStream *in_stream)
 
 bool FormatContext::FillEncoderSetby(const StreamContext &in_stream_ctx, const std::string& id)
 {
-    if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && !v_stream_ctx.stream)
+    bool ret = true;
+    if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
     {
         v_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
-        v_stream_ctx.FillEncoderSetby(in_stream_ctx.codec_ctx, id);
+        ret = v_stream_ctx.FillEncoderSetby(in_stream_ctx.codec_ctx, id);
+        if(!ret) logging("failed to fill video encoder!");
     }
-    if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && !a_stream_ctx.stream)
+    else if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
     {
         a_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
-        a_stream_ctx.FillEncoderSetby(in_stream_ctx.codec_ctx, id);
+        ret = a_stream_ctx.FillEncoderSetby(in_stream_ctx.codec_ctx, id);
+        if(!ret) logging("failed to fill audio encoder!");
     }
-    logging("this input stream [%d : %s] is not the type we need!",
+    else{
+        logging("this input stream [%d : %s] is not the type we need!",
             in_stream_ctx.index, av_get_media_type_string(in_stream_ctx.stream->codecpar->codec_type));
-    return true;
+        ret = false;
+    }
+    
+    return ret;
 }
 
 bool Transcoder::ParseParam(int argc, char **argv)
