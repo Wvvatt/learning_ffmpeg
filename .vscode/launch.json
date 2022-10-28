@@ -15,7 +15,7 @@
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/deps/lib"
+                    "value": "${workspaceFolder}/build/lib"
                 }
             ],
             "cwd": "${workspaceFolder}"
@@ -31,7 +31,7 @@
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/deps/lib"
+                    "value": "${workspaceFolder}/build/lib"
                 }
             ],
             "cwd": "${workspaceFolder}/self-project"
@@ -44,17 +44,17 @@
             "args": [
                 "-i",
                 "${fileDirname}/h264_aac_2.6M_dance.ts",
-                // "--vcodec",
-                // "h265",
-                // "--acodec",
-                // "aac",
+                "--vcodec",
+                "h265",
+                "--acodec",
+                "aac",
                 "-o",
                 "${fileDirname}/trans.ts"
             ],
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/deps/lib"
+                    "value": "${workspaceFolder}/build/lib"
                 }
             ],
             "cwd": "${workspaceFolder}/self-project"
