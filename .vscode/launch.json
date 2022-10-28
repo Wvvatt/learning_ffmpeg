@@ -15,7 +15,7 @@
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/build/lib"
+                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
                 }
             ],
             "cwd": "${workspaceFolder}"
@@ -31,7 +31,7 @@
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/build/lib"
+                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
                 }
             ],
             "cwd": "${workspaceFolder}/self-project"
@@ -54,7 +54,7 @@
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/build/lib"
+                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
                 }
             ],
             "cwd": "${workspaceFolder}/self-project"
@@ -76,7 +76,7 @@
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/build/lib"
+                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
                 }
             ],
             "cwd": "${workspaceFolder}/self-project"
