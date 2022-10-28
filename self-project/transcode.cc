@@ -1,3 +1,16 @@
+#include <signal.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <execinfo.h>
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+#include "libavutil/rational.h"
+#ifdef __cplusplus
+}
+#endif
 #include "transcode.h"
 
 #define logging(fmt, ...) fprintf(stderr, "[%s %d]" fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);
@@ -8,6 +21,21 @@ static constexpr char usage_string[] = "usage:\n"
                                        "-acodec audio_codec_type\n"
                                        "-codec av_codec_type\tif output code type is the same as input codec type, please set -codec copy\n"
                                        "\n";
+
+static void segv_handler(int signum)
+{
+    void *buffer[256];
+    signal(signum, SIG_DFL);
+    int fd = open("backtrace", O_RDWR | O_CREAT | O_TRUNC);
+    if (fd > 0)
+    {
+        int size = backtrace(buffer, 256);
+        backtrace_symbols_fd(buffer, size, fd);
+        close(fd);
+    }
+
+    exit(1);
+}
 
 bool StreamContext::FillDecoder(AVStream *in_stream)
 {
@@ -39,11 +67,14 @@ bool StreamContext::FillDecoder(AVStream *in_stream)
 
 bool StreamContext::FillEncoderCopyFrom(AVCodecParameters *in_codecpar)
 {
-    avcodec_parameters_copy(stream->codecpar, in_codecpar);
+    if(avcodec_parameters_copy(stream->codecpar, in_codecpar) < 0)
+    {
+        return false;
+    }
     return true;
 }
 
-bool StreamContext::FillEncoderSetby(AVCodecContext *dec_ctx, const std::string& id)
+bool StreamContext::FillVideoEncoder(AVCodecContext *dec_ctx, const std::string& id, AVRational frame_rate)
 {
     codec = avcodec_find_encoder_by_name(id.c_str());
     if(!codec) {
@@ -55,7 +86,7 @@ bool StreamContext::FillEncoderSetby(AVCodecContext *dec_ctx, const std::string&
         logging("failed to alloc context");
         return false;
     }
-    // video
+
     codec_ctx->height = dec_ctx->height;
     codec_ctx->width = dec_ctx->width;
     codec_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
@@ -66,12 +97,38 @@ bool StreamContext::FillEncoderSetby(AVCodecContext *dec_ctx, const std::string&
     codec_ctx->rc_buffer_size = 4 * 1000 * 1000;
     codec_ctx->rc_max_rate = 2 * 1000 * 1000;
     codec_ctx->rc_min_rate = 2 * 1000 * 1000;
-    // audio
+
+    codec_ctx->time_base = av_inv_q(frame_rate);
+    stream->time_base = codec_ctx->time_base;
+
+    avcodec_parameters_from_context(stream->codecpar, codec_ctx);
+
+    return true;
+}
+
+
+bool StreamContext::FillAudioEncoder(AVCodecContext *dec_ctx, const std::string& id)
+{
+    codec = avcodec_find_encoder_by_name(id.c_str());
+    if(!codec) {
+        logging("failed to find encoder codec");
+        return false;
+    }
+    codec_ctx = avcodec_alloc_context3(codec);
+    if(!codec_ctx){
+        logging("failed to alloc context");
+        return false;
+    }
+
     codec_ctx->sample_rate = dec_ctx->sample_rate;
     codec_ctx->sample_fmt = dec_ctx->sample_fmt;
     codec_ctx->bit_rate = dec_ctx->bit_rate;
 
-    stream->time_base = codec_ctx->time_base = dec_ctx->time_base;
+    codec_ctx->time_base = (AVRational){1, dec_ctx->sample_rate};
+
+    codec_ctx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
+
+    stream->time_base = codec_ctx->time_base;
 
     avcodec_parameters_from_context(stream->codecpar, codec_ctx);
 
@@ -120,21 +177,27 @@ bool FormatContext::FillDecoder(AVStream *stream)
 }
 
 // copy不需要AVCodecContext
-bool FormatContext::FillEncoderCopyFrom(AVStream *in_stream)
+bool FormatContext::FillEncoderCopyFrom(const StreamContext &in_stream_ctx)
 {
-    if (in_stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+    bool ret = true;
+    if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
     {
         v_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
-        v_stream_ctx.FillEncoderCopyFrom(in_stream->codecpar);
+        ret = v_stream_ctx.FillEncoderCopyFrom(in_stream_ctx.stream->codecpar);
+        if(!ret) logging("failed to copy video encoder!");
     }
-    if (in_stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+    else if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
     {
         a_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
-        a_stream_ctx.FillEncoderCopyFrom(in_stream->codecpar);
+        ret = a_stream_ctx.FillEncoderCopyFrom(in_stream_ctx.stream->codecpar);
+        if(!ret) logging("failed to copy video encoder!");
     }
-    logging("this input stream [%d : %s] is not the type we need!",
-            in_stream->index, av_get_media_type_string(in_stream->codecpar->codec_type));
-    return true;
+    else{
+        logging("this input stream [%d : %s] is not the type we need!",
+            in_stream_ctx.stream->index, av_get_media_type_string(in_stream_ctx.stream->codecpar->codec_type));
+    }
+
+    return ret;
 }
 
 bool FormatContext::FillEncoderSetby(const StreamContext &in_stream_ctx, const std::string& id)
@@ -142,23 +205,46 @@ bool FormatContext::FillEncoderSetby(const StreamContext &in_stream_ctx, const s
     bool ret = true;
     if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
     {
+        v_stream_ctx.index = 0;
         v_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
-        ret = v_stream_ctx.FillEncoderSetby(in_stream_ctx.codec_ctx, id);
+        AVRational input_framerate = av_guess_frame_rate(nullptr, in_stream_ctx.stream, nullptr);
+        ret = v_stream_ctx.FillVideoEncoder(in_stream_ctx.codec_ctx, id, input_framerate);
         if(!ret) logging("failed to fill video encoder!");
     }
     else if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
     {
+        a_stream_ctx.index = 1;
         a_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
-        ret = a_stream_ctx.FillEncoderSetby(in_stream_ctx.codec_ctx, id);
+        ret = a_stream_ctx.FillAudioEncoder(in_stream_ctx.codec_ctx, id);
         if(!ret) logging("failed to fill audio encoder!");
     }
     else{
         logging("this input stream [%d : %s] is not the type we need!",
             in_stream_ctx.index, av_get_media_type_string(in_stream_ctx.stream->codecpar->codec_type));
-        ret = false;
     }
     
     return ret;
+}
+
+bool FormatContext::OpenFileInit()
+{
+    if(!avfmt->oformat){
+        return false;
+    }
+    if(avfmt->oformat->flags & AVFMT_GLOBALHEADER){
+        avfmt->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+    }
+    if(!(avfmt->oformat->flags & AVFMT_NOFILE)){
+        if(avio_open(&avfmt->pb, file_name.c_str(), AVIO_FLAG_WRITE) < 0){
+            logging("failed to open output file!");
+            return false;
+        }
+    }
+    if(avformat_write_header(avfmt, nullptr) < 0){
+        logging("failed to write output header!");
+        return false;
+    }
+    return true;
 }
 
 bool Transcoder::ParseParam(int argc, char **argv)
@@ -235,6 +321,9 @@ bool Transcoder::Open()
         logging("failed to open output!");
         return false;
     }
+    if(!output_fmtctx_.OpenFileInit()){
+        return false;
+    }
     return true;
 }
 
@@ -278,7 +367,7 @@ bool Transcoder::OpenOutput()
     {
         if (v_encode_type_.empty() || v_encode_type_ == "copy")
         {
-            output_fmtctx_.FillEncoderCopyFrom(input_fmtctx_.v_stream_ctx.stream);
+            output_fmtctx_.FillEncoderCopyFrom(input_fmtctx_.v_stream_ctx);
         }
         else
         {   
@@ -289,7 +378,7 @@ bool Transcoder::OpenOutput()
     {
         if (a_encode_type_.empty() || a_encode_type_ == "copy")
         {
-            output_fmtctx_.FillEncoderCopyFrom(input_fmtctx_.a_stream_ctx.stream);
+            output_fmtctx_.FillEncoderCopyFrom(input_fmtctx_.a_stream_ctx);
         }
         else
         {
@@ -306,11 +395,16 @@ bool Transcoder::OpenOutput()
         return false;
     }
 
+    av_dump_format(output_fmtctx_.avfmt, 0, output_fmtctx_.file_name.c_str(), 1);
+
     return true;
 }
 
+
+
 int main(int argc, char **argv)
 {
+    signal(SIGSEGV, segv_handler);
     Transcoder transcoder;
     if (!transcoder.ParseParam(argc, argv))
     {

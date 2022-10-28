@@ -16,7 +16,7 @@ case "$1" in
 	./transcode ${@:2}
 	;;
 	clear)
-	rm *.flv *.mp4 *.pgm -f
+	rm *.flv *.mp4 *.pgm -f backtrace
 	;;
     *)
 	echo "Usage: run.sh {start|clear} "

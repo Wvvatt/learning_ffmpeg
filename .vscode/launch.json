@@ -45,11 +45,11 @@
                 "-i",
                 "${fileDirname}/h264_aac_2.6M_dance.ts",
                 "--vcodec",
-                "h265",
+                "libx264",
                 "--acodec",
-                "aac",
+                "copy",
                 "-o",
-                "${fileDirname}/trans.ts"
+                "${fileDirname}/trans.flv"
             ],
             "environment": [
                 {

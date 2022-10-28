@@ -10,6 +10,8 @@ extern "C"
 #include "libavformat/avformat.h"
 #include "libavformat/avio.h"
 #include "libavutil/frame.h"
+#include <libavutil/timestamp.h>
+#include <libavutil/opt.h>
 #ifdef __cplusplus
 }
 #endif
@@ -23,7 +25,8 @@ struct StreamContext
 {
     bool FillDecoder(AVStream *);
     bool FillEncoderCopyFrom(AVCodecParameters *);
-    bool FillEncoderSetby(AVCodecContext *, const std::string &);
+    bool FillVideoEncoder(AVCodecContext *, const std::string &, AVRational);
+    bool FillAudioEncoder(AVCodecContext *, const std::string &);
     bool OpenCodec();
     bool Exist() const;
 
@@ -36,8 +39,11 @@ struct StreamContext
 struct FormatContext
 {
     bool FillDecoder(AVStream *);
-    bool FillEncoderCopyFrom(AVStream *);
+    bool FillEncoderCopyFrom(const StreamContext&);
     bool FillEncoderSetby(const StreamContext&, const std::string &);
+
+    bool OpenFileInit();
+    
     std::string file_name;
     AVFormatContext *avfmt{nullptr};
     StreamContext v_stream_ctx;
