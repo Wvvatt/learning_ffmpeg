@@ -1,7 +1,7 @@
 CXX=g++
 FLAG=-std=c++11 -g -Wall
 DEP_INCLUDE=-I../build/include
-DEP_LIB=-L../build/lib -lavformat -lavcodec -lavutil -Wl,-rpath-link=../build/lib:../x264/lib
+DEP_LIB=-lpthread -L../build/lib -lavformat -lavcodec -lavutil -Wl,-rpath-link=../build/lib:../x264/lib
 
 SOURCE = $(wildcard *.cc)
 OBJS = $(patsubst %.cc,%.o,${SOURCE})

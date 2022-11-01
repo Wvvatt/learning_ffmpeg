@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <string>
 #include <getopt.h>
+#include <thread>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -21,7 +23,7 @@ extern "C"
 */
 
 // 把codec部分从avformat中提取出来自己掌控
-struct StreamContext
+struct CodecContext
 {
     bool FillDecoder(AVStream *);
     bool FillEncoderCopyFrom(AVCodecParameters *);
@@ -30,24 +32,31 @@ struct StreamContext
     bool OpenCodec();
     bool Exist() const;
 
+    bool Decode(AVPacket *, AVFrame *);
+    bool Encode(AVFrame *, AVPacket *);
+
     int index{-1};
     AVStream *stream{nullptr};
     const AVCodec *codec{nullptr};
     AVCodecContext *codec_ctx{nullptr};
 };
 
-struct FormatContext
+struct PackageContext
 {
     bool FillDecoder(AVStream *);
-    bool FillEncoderCopyFrom(const StreamContext&);
-    bool FillEncoderSetby(const StreamContext&, const std::string &);
+    bool FillEncoderCopyFrom(const CodecContext&);
+    bool FillEncoderSetby(const CodecContext&, const std::string &);
 
-    bool OpenFileInit();
-    
+    bool OpenFileAndInit();
+    void WirteTailAndClose();
+
+    bool ReadPacket(AVPacket *);
+    bool WritePacket(AVPacket *);
+
     std::string file_name;
     AVFormatContext *avfmt{nullptr};
-    StreamContext v_stream_ctx;
-    StreamContext a_stream_ctx;
+    CodecContext v_stream_ctx;
+    CodecContext a_stream_ctx;
 };
 
 class Transcoder
@@ -55,8 +64,12 @@ class Transcoder
 public:
     bool ParseParam(int argc, char **argv);
     bool Open();
+    void Close();
+    void Start();
+    void Stop();
 
 private:
+    void Work();
     bool OpenInput();
     bool OpenOutput();
 
@@ -66,6 +79,9 @@ private:
     bool v_copy_{false};
     bool a_copy_{false};
 
-    FormatContext input_fmtctx_;
-    FormatContext output_fmtctx_;
+    PackageContext input_fmtctx_;
+    PackageContext output_fmtctx_;
+
+    bool work_running_{false};
+    std::thread work_thread_;
 };

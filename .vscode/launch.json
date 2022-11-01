@@ -44,12 +44,12 @@
             "args": [
                 "-i",
                 "${fileDirname}/h264_aac_2.6M_dance.ts",
-                "--vcodec",
-                "libx264",
-                "--acodec",
-                "copy",
+                // "--vcodec",
+                // "copy",
+                // "--acodec",
+                // "copy",
                 "-o",
-                "${fileDirname}/trans.flv"
+                "${fileDirname}/trans.ts"
             ],
             "environment": [
                 {
