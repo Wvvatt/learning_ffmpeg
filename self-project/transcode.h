@@ -23,14 +23,14 @@ extern "C"
 */
 
 // 把codec部分从avformat中提取出来自己掌控
-struct CodecContext
+struct CodecLayer
 {
     bool FillDecoder(AVStream *);
     bool FillEncoderCopyFrom(AVCodecParameters *);
     bool FillVideoEncoder(AVCodecContext *, const std::string &, AVRational);
     bool FillAudioEncoder(AVCodecContext *, const std::string &);
     bool OpenCodec();
-    bool Exist() const;
+    bool CodecExist() const;
 
     bool Decode(AVPacket *, AVFrame *);
     bool Encode(AVFrame *, AVPacket *);
@@ -41,11 +41,11 @@ struct CodecContext
     AVCodecContext *codec_ctx{nullptr};
 };
 
-struct PackageContext
+struct PackageLayer
 {
     bool FillDecoder(AVStream *);
-    bool FillEncoderCopyFrom(const CodecContext&);
-    bool FillEncoderSetby(const CodecContext&, const std::string &);
+    bool FillEncoderCopyFrom(const CodecLayer&);
+    bool FillEncoderSetby(const CodecLayer&, const std::string &);
 
     bool OpenFileAndInit();
     void WirteTailAndClose();
@@ -55,8 +55,8 @@ struct PackageContext
 
     std::string file_name;
     AVFormatContext *avfmt{nullptr};
-    CodecContext v_stream_ctx;
-    CodecContext a_stream_ctx;
+    CodecLayer v_codec_layer_;
+    CodecLayer a_codec_layer_;
 };
 
 class Transcoder
@@ -79,8 +79,8 @@ private:
     bool v_copy_{false};
     bool a_copy_{false};
 
-    PackageContext input_fmtctx_;
-    PackageContext output_fmtctx_;
+    PackageLayer input_package_layer_;
+    PackageLayer output_package_layer_;
 
     bool work_running_{false};
     std::thread work_thread_;

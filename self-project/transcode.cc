@@ -50,7 +50,7 @@ static void segv_handler(int signum)
     exit(1);
 }
 
-bool CodecContext::FillDecoder(AVStream *in_stream)
+bool CodecLayer::FillDecoder(AVStream *in_stream)
 {
     index = in_stream->index;
     stream = in_stream;
@@ -78,7 +78,7 @@ bool CodecContext::FillDecoder(AVStream *in_stream)
     return true;
 }
 
-bool CodecContext::FillEncoderCopyFrom(AVCodecParameters *in_codecpar)
+bool CodecLayer::FillEncoderCopyFrom(AVCodecParameters *in_codecpar)
 {
     if(avcodec_parameters_copy(stream->codecpar, in_codecpar) < 0)
     {
@@ -87,7 +87,7 @@ bool CodecContext::FillEncoderCopyFrom(AVCodecParameters *in_codecpar)
     return true;
 }
 
-bool CodecContext::FillVideoEncoder(AVCodecContext *dec_ctx, const std::string& id, AVRational frame_rate)
+bool CodecLayer::FillVideoEncoder(AVCodecContext *dec_ctx, const std::string& id, AVRational frame_rate)
 {
     codec = avcodec_find_encoder_by_name(id.c_str());
     if(!codec) {
@@ -120,7 +120,7 @@ bool CodecContext::FillVideoEncoder(AVCodecContext *dec_ctx, const std::string& 
 }
 
 
-bool CodecContext::FillAudioEncoder(AVCodecContext *dec_ctx, const std::string& id)
+bool CodecLayer::FillAudioEncoder(AVCodecContext *dec_ctx, const std::string& id)
 {
     codec = avcodec_find_encoder_by_name(id.c_str());
     if(!codec) {
@@ -148,7 +148,7 @@ bool CodecContext::FillAudioEncoder(AVCodecContext *dec_ctx, const std::string& 
     return true;
 }
 
-bool CodecContext::OpenCodec()
+bool CodecLayer::OpenCodec()
 {
     if (index != -1 && codec && codec_ctx && (avcodec_open2(codec_ctx, codec, NULL) >= 0))
     {
@@ -161,7 +161,7 @@ bool CodecContext::OpenCodec()
     }
 }
 
-bool CodecContext::Exist() const
+bool CodecLayer::CodecExist() const
 {
     if (index != -1 && stream && codec && codec_ctx)
     {
@@ -173,7 +173,7 @@ bool CodecContext::Exist() const
     }
 }
 
-bool CodecContext::Decode(AVPacket *in_pkt, AVFrame *out_frame)
+bool CodecLayer::Decode(AVPacket *in_pkt, AVFrame *out_frame)
 {
     if(!in_pkt || !out_frame){
         return false;
@@ -197,7 +197,7 @@ bool CodecContext::Decode(AVPacket *in_pkt, AVFrame *out_frame)
     }
 }
 
-bool CodecContext::Encode(AVFrame *in_frame, AVPacket *out_pkt)
+bool CodecLayer::Encode(AVFrame *in_frame, AVPacket *out_pkt)
 {
     if(!in_frame || !out_pkt){
         return false;
@@ -222,15 +222,15 @@ bool CodecContext::Encode(AVFrame *in_frame, AVPacket *out_pkt)
 }
 
 // 每种类型只记录第一个流
-bool PackageContext::FillDecoder(AVStream *stream)
+bool PackageLayer::FillDecoder(AVStream *stream)
 {
-    if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && v_stream_ctx.index == -1)
+    if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && v_codec_layer_.index == -1)
     {
-        return v_stream_ctx.FillDecoder(stream);
+        return v_codec_layer_.FillDecoder(stream);
     }
-    if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && a_stream_ctx.index == -1)
+    if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && a_codec_layer_.index == -1)
     {
-        return a_stream_ctx.FillDecoder(stream);
+        return a_codec_layer_.FillDecoder(stream);
     }
     logging("this input stream [%d : %s] is not the type we need!",
             stream->index, av_get_media_type_string(stream->codecpar->codec_type));
@@ -238,19 +238,19 @@ bool PackageContext::FillDecoder(AVStream *stream)
 }
 
 // copy不需要AVCodecContext
-bool PackageContext::FillEncoderCopyFrom(const CodecContext &in_stream_ctx)
+bool PackageLayer::FillEncoderCopyFrom(const CodecLayer &in_stream_ctx)
 {
     bool ret = true;
     if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
     {
-        v_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
-        ret = v_stream_ctx.FillEncoderCopyFrom(in_stream_ctx.stream->codecpar);
+        v_codec_layer_.stream = avformat_new_stream(avfmt, nullptr);
+        ret = v_codec_layer_.FillEncoderCopyFrom(in_stream_ctx.stream->codecpar);
         if(!ret) logging("failed to copy video encoder!");
     }
     else if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
     {
-        a_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
-        ret = a_stream_ctx.FillEncoderCopyFrom(in_stream_ctx.stream->codecpar);
+        a_codec_layer_.stream = avformat_new_stream(avfmt, nullptr);
+        ret = a_codec_layer_.FillEncoderCopyFrom(in_stream_ctx.stream->codecpar);
         if(!ret) logging("failed to copy video encoder!");
     }
     else{
@@ -261,22 +261,22 @@ bool PackageContext::FillEncoderCopyFrom(const CodecContext &in_stream_ctx)
     return ret;
 }
 
-bool PackageContext::FillEncoderSetby(const CodecContext &in_stream_ctx, const std::string& id)
+bool PackageLayer::FillEncoderSetby(const CodecLayer &in_stream_ctx, const std::string& id)
 {
     bool ret = true;
     if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
     {
-        v_stream_ctx.index = 0;
-        v_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
+        v_codec_layer_.index = 0;
+        v_codec_layer_.stream = avformat_new_stream(avfmt, nullptr);
         AVRational input_framerate = av_guess_frame_rate(nullptr, in_stream_ctx.stream, nullptr);
-        ret = v_stream_ctx.FillVideoEncoder(in_stream_ctx.codec_ctx, id, input_framerate);
+        ret = v_codec_layer_.FillVideoEncoder(in_stream_ctx.codec_ctx, id, input_framerate);
         if(!ret) logging("failed to fill video encoder!");
     }
     else if (in_stream_ctx.stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
     {
-        a_stream_ctx.index = 1;
-        a_stream_ctx.stream = avformat_new_stream(avfmt, nullptr);
-        ret = a_stream_ctx.FillAudioEncoder(in_stream_ctx.codec_ctx, id);
+        a_codec_layer_.index = 1;
+        a_codec_layer_.stream = avformat_new_stream(avfmt, nullptr);
+        ret = a_codec_layer_.FillAudioEncoder(in_stream_ctx.codec_ctx, id);
         if(!ret) logging("failed to fill audio encoder!");
     }
     else{
@@ -287,7 +287,7 @@ bool PackageContext::FillEncoderSetby(const CodecContext &in_stream_ctx, const s
     return ret;
 }
 
-bool PackageContext::OpenFileAndInit()
+bool PackageLayer::OpenFileAndInit()
 {
     if(!avfmt->oformat){
         return false;
@@ -308,12 +308,12 @@ bool PackageContext::OpenFileAndInit()
     return true;
 }
 
-void PackageContext::WirteTailAndClose()
+void PackageLayer::WirteTailAndClose()
 {
     av_write_trailer(avfmt);
 }
 
-bool PackageContext::ReadPacket(AVPacket *in_pkt)
+bool PackageLayer::ReadPacket(AVPacket *in_pkt)
 {
     if(av_read_frame(avfmt, in_pkt) >= 0){
         return true;
@@ -323,7 +323,7 @@ bool PackageContext::ReadPacket(AVPacket *in_pkt)
     }
 }
 
-bool PackageContext::WritePacket(AVPacket *out_pkt)
+bool PackageLayer::WritePacket(AVPacket *out_pkt)
 {   
     if(av_interleaved_write_frame(avfmt, out_pkt) >= 0){
         return true;
@@ -344,8 +344,8 @@ bool Transcoder::ParseParam(int argc, char **argv)
     int opt_index;
     const char *optstring = "i:o:h";
 
-    std::string &in_filename = input_fmtctx_.file_name;
-    std::string &out_filename = output_fmtctx_.file_name;
+    std::string &in_filename = input_package_layer_.file_name;
+    std::string &out_filename = output_package_layer_.file_name;
     v_encode_type_.clear();
     a_encode_type_.clear();
 
@@ -407,7 +407,7 @@ bool Transcoder::Open()
         logging("failed to open output!");
         return false;
     }
-    if(!output_fmtctx_.OpenFileAndInit()){
+    if(!output_package_layer_.OpenFileAndInit()){
         return false;
     }
     work_thread_ = std::thread(&Transcoder::Work, this);
@@ -416,39 +416,39 @@ bool Transcoder::Open()
 
 void Transcoder::Close()
 {
-    avformat_close_input(&input_fmtctx_.avfmt);
-    if (output_fmtctx_.avfmt && !(output_fmtctx_.avfmt->oformat->flags & AVFMT_NOFILE))
-        avio_closep(&output_fmtctx_.avfmt->pb);
+    avformat_close_input(&input_package_layer_.avfmt);
+    if (output_package_layer_.avfmt && !(output_package_layer_.avfmt->oformat->flags & AVFMT_NOFILE))
+        avio_closep(&output_package_layer_.avfmt->pb);
 
-    if(input_fmtctx_.avfmt) avformat_free_context(input_fmtctx_.avfmt);
-    if(output_fmtctx_.avfmt) avformat_free_context(output_fmtctx_.avfmt);
-    if(input_fmtctx_.v_stream_ctx.codec_ctx) avcodec_free_context(&input_fmtctx_.v_stream_ctx.codec_ctx);
-    if(input_fmtctx_.a_stream_ctx.codec_ctx) avcodec_free_context(&input_fmtctx_.a_stream_ctx.codec_ctx); 
-    if(output_fmtctx_.v_stream_ctx.codec_ctx) avcodec_free_context(&output_fmtctx_.v_stream_ctx.codec_ctx);
-    if(output_fmtctx_.a_stream_ctx.codec_ctx) avcodec_free_context(&output_fmtctx_.a_stream_ctx.codec_ctx);
+    if(input_package_layer_.avfmt) avformat_free_context(input_package_layer_.avfmt);
+    if(output_package_layer_.avfmt) avformat_free_context(output_package_layer_.avfmt);
+    if(input_package_layer_.v_codec_layer_.codec_ctx) avcodec_free_context(&input_package_layer_.v_codec_layer_.codec_ctx);
+    if(input_package_layer_.a_codec_layer_.codec_ctx) avcodec_free_context(&input_package_layer_.a_codec_layer_.codec_ctx); 
+    if(output_package_layer_.v_codec_layer_.codec_ctx) avcodec_free_context(&output_package_layer_.v_codec_layer_.codec_ctx);
+    if(output_package_layer_.a_codec_layer_.codec_ctx) avcodec_free_context(&output_package_layer_.a_codec_layer_.codec_ctx);
 }
 
 bool Transcoder::OpenInput()
 {
     // open media
-    input_fmtctx_.avfmt = avformat_alloc_context();
-    if (avformat_open_input(&input_fmtctx_.avfmt, input_fmtctx_.file_name.c_str(), 0, 0) < 0)
+    input_package_layer_.avfmt = avformat_alloc_context();
+    if (avformat_open_input(&input_package_layer_.avfmt, input_package_layer_.file_name.c_str(), 0, 0) < 0)
     {
         return false;
     }
-    if (avformat_find_stream_info(input_fmtctx_.avfmt, 0) < 0)
+    if (avformat_find_stream_info(input_package_layer_.avfmt, 0) < 0)
     {
         return false;
     }
-    av_dump_format(input_fmtctx_.avfmt, 0, input_fmtctx_.file_name.c_str(), 0);
+    av_dump_format(input_package_layer_.avfmt, 0, input_package_layer_.file_name.c_str(), 0);
 
     // set decoder
-    for (uint32_t i = 0; i < input_fmtctx_.avfmt->nb_streams; i++)
+    for (uint32_t i = 0; i < input_package_layer_.avfmt->nb_streams; i++)
     {
-        AVStream *stream = input_fmtctx_.avfmt->streams[i];
-        input_fmtctx_.FillDecoder(stream);
+        AVStream *stream = input_package_layer_.avfmt->streams[i];
+        input_package_layer_.FillDecoder(stream);
     }
-    if (!input_fmtctx_.v_stream_ctx.OpenCodec() || !input_fmtctx_.a_stream_ctx.OpenCodec())
+    if (!input_package_layer_.v_codec_layer_.OpenCodec() || !input_package_layer_.a_codec_layer_.OpenCodec())
     {
         return false;
     }
@@ -458,45 +458,45 @@ bool Transcoder::OpenInput()
 
 bool Transcoder::OpenOutput()
 {
-    avformat_alloc_output_context2(&output_fmtctx_.avfmt, nullptr, nullptr, output_fmtctx_.file_name.c_str());
-    if (!output_fmtctx_.avfmt)
+    avformat_alloc_output_context2(&output_package_layer_.avfmt, nullptr, nullptr, output_package_layer_.file_name.c_str());
+    if (!output_package_layer_.avfmt)
     {
         logging("failed to alloce output format context!");
         return false;
     }
-    if (input_fmtctx_.v_stream_ctx.Exist())
+    if (input_package_layer_.v_codec_layer_.CodecExist())
     {
-        if (v_encode_type_.empty() || v_encode_type_ == "copy")
+        if (v_copy_)
         {
-            output_fmtctx_.FillEncoderCopyFrom(input_fmtctx_.v_stream_ctx);
+            output_package_layer_.FillEncoderCopyFrom(input_package_layer_.v_codec_layer_);
         }
         else
         {   
-            output_fmtctx_.FillEncoderSetby(input_fmtctx_.v_stream_ctx, v_encode_type_);
+            output_package_layer_.FillEncoderSetby(input_package_layer_.v_codec_layer_, v_encode_type_);
         }
     }
-    if (input_fmtctx_.a_stream_ctx.Exist())
+    if (input_package_layer_.a_codec_layer_.CodecExist())
     {
-        if (a_encode_type_.empty() || a_encode_type_ == "copy")
+        if (a_copy_)
         {
-            output_fmtctx_.FillEncoderCopyFrom(input_fmtctx_.a_stream_ctx);
+            output_package_layer_.FillEncoderCopyFrom(input_package_layer_.a_codec_layer_);
         }
         else
         {
-            output_fmtctx_.FillEncoderSetby(input_fmtctx_.a_stream_ctx, a_encode_type_);
+            output_package_layer_.FillEncoderSetby(input_package_layer_.a_codec_layer_, a_encode_type_);
         }
     }
 
-    if(!v_copy_ && !output_fmtctx_.v_stream_ctx.OpenCodec()){
+    if(!v_copy_ && !output_package_layer_.v_codec_layer_.OpenCodec()){
         logging("failed to open video encoder!");
         return false;
     }
-    if(!a_copy_ && !output_fmtctx_.a_stream_ctx.OpenCodec()){
+    if(!a_copy_ && !output_package_layer_.a_codec_layer_.OpenCodec()){
         logging("failed to open audio encoder!");
         return false;
     }
 
-    av_dump_format(output_fmtctx_.avfmt, 0, output_fmtctx_.file_name.c_str(), 1);
+    av_dump_format(output_package_layer_.avfmt, 0, output_package_layer_.file_name.c_str(), 1);
 
     return true;
 }
@@ -509,10 +509,10 @@ void Transcoder::Work()
     while(work_running_){
         av_packet_unref(pkt);
         av_frame_unref(frame);
-        if(input_fmtctx_.ReadPacket(pkt)){
-            if(input_fmtctx_.avfmt->streams[pkt->stream_index]->codecpar->codec_type 
+        if(input_package_layer_.ReadPacket(pkt)){
+            if(input_package_layer_.avfmt->streams[pkt->stream_index]->codecpar->codec_type 
             == AVMEDIA_TYPE_VIDEO){
-                auto&& stream_ctx = output_fmtctx_.v_stream_ctx;
+                auto&& stream_ctx = output_package_layer_.v_codec_layer_;
                 if(!v_copy_){
                     if(stream_ctx.Decode(pkt, frame)){
                         continue;
@@ -523,16 +523,16 @@ void Transcoder::Work()
                     pkt->stream_index = stream_ctx.index;
                     pkt->duration = stream_ctx.stream->time_base.den / 
                     stream_ctx.stream->time_base.num / 
-                    input_fmtctx_.v_stream_ctx.stream->avg_frame_rate.num * 
-                    input_fmtctx_.v_stream_ctx.stream->avg_frame_rate.den;
+                    input_package_layer_.v_codec_layer_.stream->avg_frame_rate.num * 
+                    input_package_layer_.v_codec_layer_.stream->avg_frame_rate.den;
                 }
 
-                av_packet_rescale_ts(pkt, input_fmtctx_.v_stream_ctx.stream->time_base,
-                    output_fmtctx_.v_stream_ctx.stream->time_base);
+                av_packet_rescale_ts(pkt, input_package_layer_.v_codec_layer_.stream->time_base,
+                    output_package_layer_.v_codec_layer_.stream->time_base);
             }
-            else if(input_fmtctx_.avfmt->streams[pkt->stream_index]->codecpar->codec_type 
+            else if(input_package_layer_.avfmt->streams[pkt->stream_index]->codecpar->codec_type 
             == AVMEDIA_TYPE_AUDIO){
-                auto &&stream_ctx = output_fmtctx_.a_stream_ctx;
+                auto &&stream_ctx = output_package_layer_.a_codec_layer_;
                 if(!a_copy_){
                     stream_ctx.Decode(pkt, frame);
                     av_packet_unref(pkt);
@@ -541,15 +541,15 @@ void Transcoder::Work()
                     pkt->stream_index = stream_ctx.index;
                 }
 
-                av_packet_rescale_ts(pkt, input_fmtctx_.a_stream_ctx.stream->time_base,
-                    output_fmtctx_.a_stream_ctx.stream->time_base);
+                av_packet_rescale_ts(pkt, input_package_layer_.a_codec_layer_.stream->time_base,
+                    output_package_layer_.a_codec_layer_.stream->time_base);
             }
             else{
                 logging("not the type we need!");
                 continue;
             }
 
-            output_fmtctx_.WritePacket(pkt);
+            output_package_layer_.WritePacket(pkt);
         }
         else{
             break;
