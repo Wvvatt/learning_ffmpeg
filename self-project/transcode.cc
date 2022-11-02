@@ -301,7 +301,7 @@ bool PackageLayer::OpenFileAndInit()
     if(!(avfmt->oformat->flags & AVFMT_NOFILE)){
         if(avio_open(&avfmt->pb, file_name.c_str(), AVIO_FLAG_WRITE) < 0){
             logging("failed to open output file!");
-            return false;
+            return false; 
         }
     }
     if(avformat_write_header(avfmt, nullptr) < 0){
