@@ -103,16 +103,19 @@ bool CodecLayer::FillVideoEncoder(AVCodecContext *dec_ctx, const std::string& id
     codec_ctx->height = dec_ctx->height;
     codec_ctx->width = dec_ctx->width;
     codec_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
-    if(codec_ctx->pix_fmt){
+    if(codec->pix_fmts){
+        codec_ctx->pix_fmt = codec->pix_fmts[0];
+    }
+    else{
         codec_ctx->pix_fmt = dec_ctx->pix_fmt;
     }
+
     codec_ctx->bit_rate = 2 * 1000 * 1000;
     codec_ctx->rc_buffer_size = 4 * 1000 * 1000;
     codec_ctx->rc_max_rate = 2 * 1000 * 1000;
-    codec_ctx->rc_min_rate = 2 * 1000 * 1000;
+    codec_ctx->rc_min_rate = 2.5 * 1000 * 1000;
 
-    codec_ctx->time_base = av_inv_q(frame_rate);
-    stream->time_base = codec_ctx->time_base;
+    stream->time_base = codec_ctx->time_base = av_inv_q(frame_rate);
 
     avcodec_parameters_from_context(stream->codecpar, codec_ctx);
 
@@ -136,14 +139,12 @@ bool CodecLayer::FillAudioEncoder(AVCodecContext *dec_ctx, const std::string& id
     codec_ctx->channels = 2;
     codec_ctx->channel_layout = av_get_default_channel_layout(2);
     codec_ctx->sample_rate = dec_ctx->sample_rate;
-    codec_ctx->sample_fmt = dec_ctx->sample_fmt;
+    codec_ctx->sample_fmt = codec->sample_fmts[0];
     codec_ctx->bit_rate = dec_ctx->bit_rate;
-
-    codec_ctx->time_base = (AVRational){1, dec_ctx->sample_rate};
 
     codec_ctx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 
-    stream->time_base = codec_ctx->time_base;
+    stream->time_base = codec_ctx->time_base = (AVRational){1, dec_ctx->sample_rate};
 
     avcodec_parameters_from_context(stream->codecpar, codec_ctx);
 
