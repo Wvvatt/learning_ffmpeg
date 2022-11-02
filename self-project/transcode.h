@@ -65,11 +65,11 @@ public:
     bool ParseParam(int argc, char **argv);
     bool Open();
     void Close();
+    void Work();
     void Start();
     void Stop();
 
 private:
-    void Work();
     bool OpenInput();
     bool OpenOutput();
 
