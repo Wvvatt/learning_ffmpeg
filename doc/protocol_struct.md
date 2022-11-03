@@ -1,18 +1,20 @@
 [toc]
 
-
 ## 三者之间的关系
 
-#### 继承关系
+#### 类图
+
 ```mermaid
 graph TB
-    AVIOContext --> URLProtocol
-    AVIOContext --> OutputStream
-    URLProtocol --> RtmpProtocol
-    URLProtocol --> FileProtocol
+    AVIOContext --继承--> URLProtocol
+    AVIOContext --继承--> OutputStream
+    URLProtocol --继承--> RtmpProtocol
+    URLProtocol --继承--> FileProtocol
+    URLProtocol --继承--> 其他协议
 ```
 
-使用c++表示
+#### 使用c++表示
+
 ```cpp
 class IOBase
 {
@@ -75,12 +77,12 @@ public:
     }
 private:
     /*  IOBase是使用多态来实现下面这段c代码
-        void *opaque;           
+        void *opaque;         
         int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
         int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
     */
    IOBase *io_;  
-   uint8_t *buffer_;       
+   uint8_t *buffer_;     
    int buffer_size_;
    ...
 }
@@ -98,10 +100,12 @@ graph TB
 ## AVIOContext
 
 #### 使用场景
+
 - 解封装：使用者在avformat_open_input()之前给定，或者avformat_open_input()给定。
 - 封装：使用者在avformat_write_header()之前给定。
 
 #### 操作接口
+
 - `avio_alloc_context`
 - `avio_context_free`
 - `avio_write`
@@ -113,8 +117,8 @@ graph TB
 - `avio_flush`
 - ...
 
-
 #### 公开结构
+
 ```c
 #include "libavformat/avio.h"
 ```
@@ -124,17 +128,17 @@ typedef struct AVIOContext {
 
     const AVClass *av_class;
     unsigned char *buffer; 
-    int buffer_size;     
+    int buffer_size;   
     unsigned char *buf_ptr; 
     unsigned char *buf_end; 
-    void *opaque;           
+    void *opaque;         
     int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
     int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
     int64_t (*seek)(void *opaque, int64_t offset, int whence);
     int64_t pos;   
-    int eof_reached;      
-    int error;           
-    int write_flag;      
+    int eof_reached;    
+    int error;         
+    int write_flag;    
     int max_packet_size;
     int min_packet_size;  
     unsigned long checksum;
@@ -174,11 +178,10 @@ typedef struct FFIOContext {
 } FFIOContext;
 ```
 
-
 ## URLContext
 
-
 #### 结构
+
 ```c
 typedef struct URLContext {
     const AVClass *av_class;    /**< information for av_log(). Set by url_open(). */
@@ -198,6 +201,7 @@ typedef struct URLContext {
 ```
 
 #### 方法
+
 - `ffurl_alloc`
 - `ffurl_connect`
 - `ffurl_open_whitelist`
@@ -207,12 +211,12 @@ typedef struct URLContext {
 - `ffurl_write`
 - `ffurl_seek`
 
-
-
 ## URLProtocol
+
 这是一个纯接口结构，不同的协议有不同的实现
 
 #### 结构
+
 ```c
 
 typedef struct URLProtocol {
