@@ -1,6 +1,92 @@
 [toc]
 
-整个protocol层，读取时调用的路径为:
+
+## 三者之间的关系
+
+#### 继承关系
+```mermaid
+graph TB
+    AVIOContext --> URLProtocol
+    AVIOContext --> OutputStream
+    URLProtocol --> RtmpProtocol
+    URLProtocol --> FileProtocol
+```
+
+使用c++表示
+```cpp
+class IOBase
+{
+public:
+    virtual int read_packet() = 0;
+    virtual int write_packet() = 0;
+}
+
+class URLProtocolBase
+{
+public:
+    virtual int url_open() = 0;
+    virtual int url_close() = 0;
+    virtual int url_read() = 0;
+    virtual int url_write() = 0;
+
+private:
+    const char *name;
+}
+
+class URLContext : public IOBase
+{
+public:
+    int read_packet() override{
+        return prot_->url_read();
+    };
+    int write_packet() override{
+        return prot_->url_write();
+    };
+private:
+    URLProtocolBase *prot_;
+    void *priv_data_;
+    char *filename_;
+    ...
+}
+
+class StreamOutput : public IOBase
+{
+public:
+    int read_packet() override{
+        // 具体实现... 
+    };
+    int write_packet() override{
+        // 具体实现... 
+    };
+private:
+    int bitrate;
+    int first_stream;
+    ...
+}
+
+class AVIOContext
+{
+public:
+    int read_packet(){
+        io_->read_packet();
+    };
+    int write_packet(){
+        io_->write_packet();
+    }
+private:
+    /*  IOBase是使用多态来实现下面这段c代码
+        void *opaque;           
+        int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
+        int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
+    */
+   IOBase *io_;  
+   uint8_t *buffer_;       
+   int buffer_size_;
+   ...
+}
+```
+
+使用URLProtocol时，读取调用的路径为:
 
 ```mermaid
 graph TB
@@ -15,7 +101,7 @@ graph TB
 - 解封装：使用者在avformat_open_input()之前给定，或者avformat_open_input()给定。
 - 封装：使用者在avformat_write_header()之前给定。
 
-#### 接口
+#### 操作接口
 - `avio_alloc_context`
 - `avio_context_free`
 - `avio_write`
@@ -25,7 +111,9 @@ graph TB
 - `avio_seek`
 - `avio_read`
 - `avio_flush`
-  
+- ...
+
+
 #### 公开结构
 ```c
 #include "libavformat/avio.h"
@@ -156,4 +244,61 @@ typedef struct URLProtocol {
     int (*url_move)(URLContext *h_src, URLContext *h_dst);
     const char *default_whitelist;
 } URLProtocol;
+```
+
+#### 实体
+
+```c
+extern const URLProtocol ff_async_protocol;
+extern const URLProtocol ff_bluray_protocol;
+extern const URLProtocol ff_cache_protocol;
+extern const URLProtocol ff_concat_protocol;
+extern const URLProtocol ff_concatf_protocol;
+extern const URLProtocol ff_crypto_protocol;
+extern const URLProtocol ff_data_protocol;
+extern const URLProtocol ff_ffrtmpcrypt_protocol;
+extern const URLProtocol ff_ffrtmphttp_protocol;
+extern const URLProtocol ff_file_protocol;
+extern const URLProtocol ff_ftp_protocol;
+extern const URLProtocol ff_gopher_protocol;
+extern const URLProtocol ff_gophers_protocol;
+extern const URLProtocol ff_hls_protocol;
+extern const URLProtocol ff_http_protocol;
+extern const URLProtocol ff_httpproxy_protocol;
+extern const URLProtocol ff_https_protocol;
+extern const URLProtocol ff_icecast_protocol;
+extern const URLProtocol ff_mmsh_protocol;
+extern const URLProtocol ff_mmst_protocol;
+extern const URLProtocol ff_md5_protocol;
+extern const URLProtocol ff_pipe_protocol;
+extern const URLProtocol ff_prompeg_protocol;
+extern const URLProtocol ff_rtmp_protocol;
+extern const URLProtocol ff_rtmpe_protocol;
+extern const URLProtocol ff_rtmps_protocol;
+extern const URLProtocol ff_rtmpt_protocol;
+extern const URLProtocol ff_rtmpte_protocol;
+extern const URLProtocol ff_rtmpts_protocol;
+extern const URLProtocol ff_rtp_protocol;
+extern const URLProtocol ff_sctp_protocol;
+extern const URLProtocol ff_srtp_protocol;
+extern const URLProtocol ff_subfile_protocol;
+extern const URLProtocol ff_tee_protocol;
+extern const URLProtocol ff_tcp_protocol;
+extern const URLProtocol ff_tls_protocol;
+extern const URLProtocol ff_udp_protocol;
+extern const URLProtocol ff_udplite_protocol;
+extern const URLProtocol ff_unix_protocol;
+extern const URLProtocol ff_libamqp_protocol;
+extern const URLProtocol ff_librist_protocol;
+extern const URLProtocol ff_librtmp_protocol;
+extern const URLProtocol ff_librtmpe_protocol;
+extern const URLProtocol ff_librtmps_protocol;
+extern const URLProtocol ff_librtmpt_protocol;
+extern const URLProtocol ff_librtmpte_protocol;
+extern const URLProtocol ff_libsrt_protocol;
+extern const URLProtocol ff_libssh_protocol;
+extern const URLProtocol ff_libsmbclient_protocol;
+extern const URLProtocol ff_libzmq_protocol;
+extern const URLProtocol ff_ipfs_protocol;
+extern const URLProtocol ff_ipns_protocol;
 ```
