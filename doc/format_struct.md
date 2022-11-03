@@ -234,3 +234,18 @@ typedef struct AVOutputFormat {
 } AVOutputFormat;
 ```
 
+## avformat_open_input
+打开文件的堆栈如下:
+```
+libavformat.so.59! file_open(URLContext * h, const char * filename, int flags) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\file.c:208)
+libavformat.so.59! ffurl_connect(URLContext * uc, AVDictionary ** options) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\avio.c:210)
+libavformat.so.59! ffurl_open_whitelist(URLContext ** puc, const char * filename, int flags, const AVIOInterruptCB * int_cb, AVDictionary ** options, const char * whitelist, const char * blacklist, URLContext * parent) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\avio.c:347)
+libavformat.so.59! ffio_open_whitelist(AVIOContext ** s, const char * filename, int flags, const AVIOInterruptCB * int_cb, AVDictionary ** options, const char * whitelist, const char * blacklist) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:1238)
+libavformat.so.59! io_open_default(AVFormatContext * s, AVIOContext ** pb, const char * url, int flags, AVDictionary ** options) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\options.c:151)
+libavformat.so.59! init_input(AVFormatContext * s, const char * filename, AVDictionary ** options) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:174)
+libavformat.so.59! avformat_open_input(AVFormatContext ** ps, const char * filename, const AVInputFormat * fmt, AVDictionary ** options) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:254)
+main(int argc, char ** argv) (\home\watt\learning_ffmpeg\self-project\hello.cc:40)
+```
+- 使用默认的`io_open_default`来打开`URLContext`
+- 在`init_input`中使用函数`url_find_protocol`来找到正确的`URLProtocol`
+- `ffurl_connect`里面调用了`uc>prot->url_open`,这时候已挂上了`ff_file_protocol`,因此调用到了`file_open`来打开文件
