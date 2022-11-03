@@ -6,8 +6,9 @@
 
 ```mermaid
 graph TB
-    AVIOContext --继承--> URLProtocol
+    AVIOContext --继承--> URLContext
     AVIOContext --继承--> OutputStream
+    URLContext --包含--> URLProtocol
     URLProtocol --继承--> RtmpProtocol
     URLProtocol --继承--> FileProtocol
     URLProtocol --继承--> 其他协议
