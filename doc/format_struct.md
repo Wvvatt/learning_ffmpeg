@@ -227,8 +227,7 @@ typedef struct AVOutputFormat {
 
 ## avformat_open_input
 该函数的主要作用：
-- 在`init_open`中，调用`io_open`(默认挂上`io_open_default`)，最后调用到`url_find_protocol`，探测合适的URLProtocol，获得read方法
-- 探测`AVInputFormat`，从`demuxer_list`中选择出合适的实体给`iformat`挂上，获得解封装方法
+- 在`init_open`中,调用`io_open`(默认挂上`io_open_default`)，最后调用到`url_find_protocol`，探测合适的URLProtocol，获得read方法，探测`AVInputFormat`，从`demuxer_list`中选择出合适的实体给`iformat`挂上，获得解封装方法
 - 探测到合适的io、解封装实体之后，就对码流进行封装层面的分析，调用`read_header`，得到stream的信息，比如媒体类型、编码格式等，存放在stream->codecpar中。
 
 打开文件的堆栈如下:
