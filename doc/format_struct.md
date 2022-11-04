@@ -7,10 +7,12 @@ graph TB
     AVFormatContext --成员--> AVInputFormat
     AVFormatContext --成员--> AVOutputFormat
     AVFormatContext --成员--> AVIOContext
-    AVInputFormat --继承--> ff_flv_demuxer
-    AVInputFormat --继承--> ff_mpegts_demuxer
-    AVOutputFormat --继承--> ff_flv_muxer
-    AVOutputFormat --继承--> ff_mpegts_muxer
+    AVInputFormat --多态--> ff_flv_demuxer
+    AVInputFormat --多态--> ff_mpegts_demuxer
+    AVInputFormat --多态--> xx_demuxer
+    AVOutputFormat --多态--> ff_flv_muxer
+    AVOutputFormat --多态--> ff_mpegts_muxer
+    AVOutputFormat --多态--> xx_muxer
 ```
 muxer与demuxer的实例可在`libavformat/allformats.c`中查看
 
@@ -47,10 +49,18 @@ private:
     ...
 }
 
+// 子类实现
+class MpegTsOutputFormat : public AVOutputFormatBase
+{
+public:
+    int write_header() override;
+    int write_packet() override;
+}
+
 class AVFormatContext
 {
 public:
-    AVInputFormatBase *input_fmt;       // 方法使用抽象接口
+    AVInputFormatBase *input_fmt;       // 封装层方法使用抽象接口
     AVOutputFormatBase *output_fmt;     // 
     AVIOContext *pb;                    // io句柄放在外面,封装层可以使用:(AVFormatContext*)s->pb->read_packet()
     ...
@@ -62,7 +72,6 @@ private:
 }
 ```
 
-
 ## AVFormatContext
 
 #### 结构
@@ -71,7 +80,8 @@ typedef struct AVFormatContext {
     const AVClass *av_class;
     const struct AVInputFormat *iformat;
     const struct AVOutputFormat *oformat;
-    void *priv_data;
+    void *priv_data;            // 挂着AVInputFormat或者AVOutputFormat的上下文结构体
+                                // 比如对于ff_mpegts_demuxer，这里就挂着MpegTSContext
     AVIOContext *pb;
     int ctx_flags;
     unsigned int nb_streams;
@@ -176,25 +186,6 @@ typedef struct AVInputFormat {
 } AVInputFormat;
 ```
 
-#### 读取过程
-读文件->mpegts解封装堆栈如下
-```
-file_read(URLContext * h, unsigned char * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\file.c:113)
-retry_transfer_wrapper(URLContext * h, uint8_t * buf, int size, int size_min, int (*)(URLContext *, uint8_t *, int) transfer_func) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\avio.c:370)
-ffurl_read(URLContext * h, unsigned char * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\avio.c:405)
-read_packet_wrapper(AVIOContext * s, uint8_t * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:533)
-fill_buffer(AVIOContext * s) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:577)
-avio_read(AVIOContext * s, unsigned char * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:672)
-ffio_read_indirect(AVIOContext * s, unsigned char * buf, int size, const unsigned char ** data) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:709)
-read_packet(AVFormatContext * s, uint8_t * buf, int raw_packet_size, const uint8_t ** data) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\mpegts.c:2942)
-handle_packets(MpegTSContext * ts, int64_t nb_packets) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\mpegts.c:3009)
-mpegts_read_packet(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\mpegts.c:3256)
-ff_read_packet(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:571)
-read_frame_internal(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:1245)
-av_read_frame(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:1450)
-```
-- `ff_read_packet`调用了`s->iformat->read_packet`，这是个接口，挂上了`ff_mpegts_demuxer.mpegts_read_packet`
-- `ff_mpegts_demuxer.mpegts_read_packet`读取buffer内容时调用`avio_read`，一直调用到`(AVIOContext)s.read_packet`，这是个函数指针，挂上URLContext的`ffurl_read`，最后调用到`(URLContext)h.prot.url_read`，这是个接口，挂上`ff_file_protocol.file_read`
 
 ## AVOutputFormat
 
@@ -235,6 +226,11 @@ typedef struct AVOutputFormat {
 ```
 
 ## avformat_open_input
+该函数的主要作用：
+- 在`init_open`中，调用`io_open`(默认挂上`io_open_default`)，最后调用到`url_find_protocol`，探测合适的URLProtocol，获得read方法
+- 探测`AVInputFormat`，从`demuxer_list`中选择出合适的实体给`iformat`挂上，获得解封装方法
+- 探测到合适的io、解封装实体之后，就对码流进行封装层面的分析，调用`read_header`，得到stream的信息，比如媒体类型、编码格式等，存放在stream->codecpar中。
+
 打开文件的堆栈如下:
 ```
 libavformat.so.59! file_open(URLContext * h, const char * filename, int flags) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\file.c:208)
@@ -246,6 +242,41 @@ libavformat.so.59! init_input(AVFormatContext * s, const char * filename, AVDict
 libavformat.so.59! avformat_open_input(AVFormatContext ** ps, const char * filename, const AVInputFormat * fmt, AVDictionary ** options) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:254)
 main(int argc, char ** argv) (\home\watt\learning_ffmpeg\self-project\hello.cc:40)
 ```
-- 使用默认的`io_open_default`来打开`URLContext`
-- 在`init_input`中使用函数`url_find_protocol`来找到正确的`URLProtocol`
-- `ffurl_connect`里面调用了`uc>prot->url_open`,这时候已挂上了`ff_file_protocol`,因此调用到了`file_open`来打开文件
+`URLProtocol`挂上了`ff_file_protocol`，因此最终调用到了`file_open`来打开文件
+
+读取封装头的堆栈如下：
+```
+libavformat.so.59! mpegts_read_header(AVFormatContext * s) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\mpegts.c:3100)
+libavformat.so.59! avformat_open_input(AVFormatContext ** ps, const char * filename, const AVInputFormat * fmt, AVDictionary ** options) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:311)
+```
+相关代码段:
+```c
+    if (s->iformat->read_header)
+        if ((ret = s->iformat->read_header(s)) < 0) {
+            if (s->iformat->flags_internal & FF_FMT_INIT_CLEANUP)
+                goto close;
+            goto fail;
+        }
+```
+
+## av_read_frame
+
+读文件->mpegts解封装堆栈如下
+```
+file_read(URLContext * h, unsigned char * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\file.c:113)
+retry_transfer_wrapper(URLContext * h, uint8_t * buf, int size, int size_min, int (*)(URLContext *, uint8_t *, int) transfer_func) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\avio.c:370)
+ffurl_read(URLContext * h, unsigned char * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\avio.c:405)
+read_packet_wrapper(AVIOContext * s, uint8_t * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:533)
+fill_buffer(AVIOContext * s) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:577)
+avio_read(AVIOContext * s, unsigned char * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:672)
+ffio_read_indirect(AVIOContext * s, unsigned char * buf, int size, const unsigned char ** data) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:709)
+read_packet(AVFormatContext * s, uint8_t * buf, int raw_packet_size, const uint8_t ** data) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\mpegts.c:2942)
+handle_packets(MpegTSContext * ts, int64_t nb_packets) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\mpegts.c:3009)
+mpegts_read_packet(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\mpegts.c:3256)
+ff_read_packet(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:571)
+read_frame_internal(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:1245)
+av_read_frame(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:1450)
+```
+- `ff_read_packet`调用了`s->iformat->read_packet`，这是个接口，挂上了`ff_mpegts_demuxer.mpegts_read_packet`
+- `ff_mpegts_demuxer.mpegts_read_packet`读取buffer内容时调用`avio_read`，一直调用到`(AVIOContext)s.read_packet`，这是个函数指针，挂上URLContext的`ffurl_read`，最后调用到`(URLContext)h.prot.url_read`，这是个接口，挂上`ff_file_protocol.file_read`
+- 总的路径就是调用解封装器的`read_packet`，这个函数内部调用`file_read`对文件进行读取然后处理。
