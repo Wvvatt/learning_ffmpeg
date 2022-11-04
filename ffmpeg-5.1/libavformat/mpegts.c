@@ -2759,13 +2759,14 @@ static int parse_pcr(int64_t *ppcr_high, int *ppcr_low,
                      const uint8_t *packet);
 
 /* handle one TS packet */
+//每一个packet就是一个ts包
 static int handle_packet(MpegTSContext *ts, const uint8_t *packet, int64_t pos)
 {
     MpegTSFilter *tss;
     int len, pid, cc, expected_cc, cc_ok, afc, is_start, is_discontinuity,
         has_adaptation, has_payload;
     const uint8_t *p, *p_end;
-
+    // 解析得到该ts包的pid
     pid = AV_RB16(packet + 1) & 0x1fff;
     is_start = packet[1] & 0x40;
     tss = ts->pids[pid];
@@ -2816,7 +2817,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet, int64_t pos)
             pc->flags |= AV_PKT_FLAG_CORRUPT;
         }
     }
-
+    // 包头解析完毕，p拿到的是ts包的 payload
     p = packet + 4;
     if (has_adaptation) {
         int64_t pcr_h;
