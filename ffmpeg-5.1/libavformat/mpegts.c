@@ -247,7 +247,7 @@ enum MpegTSState {
 #define PES_HEADER_SIZE 9
 #define MAX_PES_HEADER_SIZE (9 + 255)
 
-typedef struct PESContext {
+typedef struct PESContext { // watt:该结构体挂在MpegTsPesFilter.opaque上
     int pid;
     int pcr_pid; /**< if -1 then all packets containing PCR are considered */
     int stream_type;
@@ -642,7 +642,7 @@ static int get_packet_size(AVFormatContext* s)
     }
     return AVERROR_INVALIDDATA;
 }
-
+// watt:此结构包含所有表共有的字段
 typedef struct SectionHeader {
     uint8_t tid;
     uint16_t id;
@@ -2410,7 +2410,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (prg)
         prg->pmt_found = 1;
 
-    for (i = 0; i < MAX_STREAMS_PER_PROGRAM; i++) {
+    for (i = 0; i < MAX_STREAMS_PER_PROGRAM; i++) {     // watt:从这里开始解析每个流的内容
         st = 0;
         pes = NULL;
         stream_type = get8(&p, p_end);
@@ -2767,16 +2767,16 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet, int64_t pos)
         has_adaptation, has_payload;
     const uint8_t *p, *p_end;
     // 解析得到该ts包的pid
-    pid = AV_RB16(packet + 1) & 0x1fff;
-    is_start = packet[1] & 0x40;
-    tss = ts->pids[pid];
+    pid = AV_RB16(packet + 1) & 0x1fff;     // watt:拿到该包的pid
+    is_start = packet[1] & 0x40;            // 判断是不是pes的开始
+    tss = ts->pids[pid];                    // 根据pid寻找filter
     if (ts->auto_guess && !tss && is_start) {
         add_pes_stream(ts, pid, -1);
         tss = ts->pids[pid];
     }
     if (!tss)
         return 0;
-    if (is_start)
+    if (is_start)      
         tss->discard = discard_pid(ts, pid);
     if (tss->discard)
         return 0;
@@ -2817,7 +2817,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet, int64_t pos)
             pc->flags |= AV_PKT_FLAG_CORRUPT;
         }
     }
-    // 包头解析完毕，p拿到的是ts包的 payload
+    // watt:包头解析完毕，p拿到的是ts包的 payload
     p = packet + 4;
     if (has_adaptation) {
         int64_t pcr_h;
@@ -2836,7 +2836,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet, int64_t pos)
         av_assert0(pos >= TS_PACKET_SIZE);
         ts->pos47_full = pos - TS_PACKET_SIZE;
     }
-
+    // watt:判断是section还是pes
     if (tss->type == MPEGTS_SECTION) {
         if (is_start) {
             /* pointer field present */
@@ -3123,7 +3123,7 @@ static int mpegts_read_header(AVFormatContext *s)
 
         /* first do a scan to get all the services */
         seek_back(s, pb, pos);
-
+        // watt:初始化时就将pat表添加好
         mpegts_open_section_filter(ts, SDT_PID, sdt_cb, ts, 1);
         mpegts_open_section_filter(ts, PAT_PID, pat_cb, ts, 1);
         mpegts_open_section_filter(ts, EIT_PID, eit_cb, ts, 1);

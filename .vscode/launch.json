@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/self-project/hello",
             "args": [
-                "${fileDirname}/h264_aac_2.6M_dance.ts"
+                "${workspaceFolder}/self-project/h264_aac_2.6M_dance.ts"
             ],
             "environment": [
                 {
@@ -18,7 +18,7 @@
                     "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
                 }
             ],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}/self-project"
         },
         {
             "name": "gdb-decoder",
@@ -44,10 +44,10 @@
             "args": [
                 "-i",
                 "${fileDirname}/h264_aac_2.6M_dance.ts",
-                // "--vcodec",
-                // "copy",
-                // "--acodec",
-                // "copy",
+                "--vcodec",
+                "libx264",
+                "--acodec",
+                "aac",
                 "-o",
                 "${fileDirname}/trans.ts"
             ],
