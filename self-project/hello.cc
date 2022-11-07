@@ -37,7 +37,9 @@ int main(int argc, char** argv)
     }
     const char *filename = argv[1];
     AVFormatContext *av_fmt_ctx = avformat_alloc_context();
-    if(0 != avformat_open_input(&av_fmt_ctx, filename, NULL, NULL)){
+    // AVDictionary *opts = nullptr;
+    // av_dict_set(&opts, "merge_pmt_versions", "1", 0);
+    if(0 != avformat_open_input(&av_fmt_ctx, filename, nullptr, nullptr)){
         logging("avformat_open_input failed!");
         return -1;
     }
