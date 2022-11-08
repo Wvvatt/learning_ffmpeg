@@ -288,15 +288,15 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     }
 
     s->duration = s->start_time = AV_NOPTS_VALUE;
-
-    /* Allocate private data. */
+    
+    /* Allocate private data. watt:生成priv_data并且使用options对其赋值 */
     if (s->iformat->priv_data_size > 0) {
         if (!(s->priv_data = av_mallocz(s->iformat->priv_data_size))) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
         if (s->iformat->priv_class) {
-            *(const AVClass **) s->priv_data = s->iformat->priv_class;
+            *(const AVClass **) s->priv_data = s->iformat->priv_class;      // watt:将AVClass部分给priv_data赋值
             av_opt_set_defaults(s->priv_data);
             if ((ret = av_opt_set_dict(s->priv_data, &tmp)) < 0)
                 goto fail;

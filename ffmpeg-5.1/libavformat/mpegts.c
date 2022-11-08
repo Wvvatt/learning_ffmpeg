@@ -651,7 +651,7 @@ typedef struct SectionHeader {
     uint8_t sec_num;
     uint8_t last_sec_num;
 } SectionHeader;
-
+// 如果version和crc没有变化，就直接跳过对pmt的分析
 static int skip_identical(const SectionHeader *h, MpegTSSectionFilter *tssf)
 {
     if (h->version == tssf->last_ver && tssf->last_crc == tssf->crc)
@@ -887,7 +887,7 @@ static const StreamType DESC_types[] = {
     { 0x59, AVMEDIA_TYPE_SUBTITLE, AV_CODEC_ID_DVB_SUBTITLE }, /* subtitling descriptor */
     { 0 },
 };
-
+// 更新st->codecpar
 static void mpegts_find_stream_type(AVStream *st,
                                     uint32_t stream_type,
                                     const StreamType *types)
@@ -899,7 +899,7 @@ static void mpegts_find_stream_type(AVStream *st,
                 st->codecpar->codec_id   != types->codec_id) {
                 st->codecpar->codec_type = types->codec_type;
                 st->codecpar->codec_id   = types->codec_id;
-                sti->need_context_update = 1;
+                sti->need_context_update = 1;                       // codecpar的参数更新了之后，需要把AVCodecContext也更新
             }
             sti->request_probe = 0;
             return;
@@ -978,8 +978,8 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
         stream_type == STREAM_TYPE_PRIVATE_DATA) {
         st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
         st->codecpar->codec_id   = AV_CODEC_ID_BIN_DATA;
-        sti->request_probe = AVPROBE_SCORE_STREAM_RETRY / 5;
     }
+        sti->request_probe = AVPROBE_SCORE_STREAM_RETRY / 5;
 
     /* queue a context update if properties changed */
     if (old_codec_type != st->codecpar->codec_type ||
@@ -1192,7 +1192,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                         if (ts->skip_changes)
                             goto skip;
                         if (ts->merge_pmt_versions)
-                            goto skip; /* wait for PMT to merge new stream */
+                            goto skip; /* wait for PMT to merge new stream */ 
 
                         pes->st = avformat_new_stream(ts->stream, NULL);
                         if (!pes->st)
@@ -2407,10 +2407,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (!ts->pkt)
         ts->stop_parse = 2;
 
-    if (prg)
+    if (prg)        // watt:这个pmt的programid可以找到pmt
         prg->pmt_found = 1;
 
-    for (i = 0; i < MAX_STREAMS_PER_PROGRAM; i++) {     // watt:从这里开始解析每个流的内容
+      for (i = 0; i < MAX_STREAMS_PER_PROGRAM; i++) {     // watt:从这里开始解析每个流的内容
         st = 0;
         pes = NULL;
         stream_type = get8(&p, p_end);
@@ -2426,7 +2426,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         stream_identifier = parse_stream_identifier_desc(p, p_end) + 1;
 
         /* now create stream */
-        if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {
+        if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {       // watt:已存在pes filter
             pes = ts->pids[pid]->u.pes_filter.opaque;
             if (ts->merge_pmt_versions && !pes->st) {
                 st = find_matching_stream(ts, pid, h->id, stream_identifier, i, &old_program);
@@ -2443,8 +2443,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 pes->st->id = pes->pid;
             }
             st = pes->st;
-        } else if (is_pes_stream(stream_type, prog_reg_desc)) {
-            if (ts->pids[pid])
+        } else if (is_pes_stream(stream_type, prog_reg_desc)) {        // watt:不存在filter，是pes filter
+            if (ts->pids[pid])  
                 mpegts_close_filter(ts, ts->pids[pid]); // wrongly added sdt filter probably
             pes = add_pes_stream(ts, pid, pcr_pid);
             if (ts->merge_pmt_versions && pes && !pes->st) {
@@ -2461,7 +2461,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                     goto out;
                 st->id = pes->pid;
             }
-        } else {
+        } else {                                                        // watt:不存在filter，不是pes filters
             int idx = ff_find_stream_index(ts->stream, pid);
             if (idx >= 0) {
                 st = ts->stream->streams[idx];
@@ -2501,7 +2501,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (desc_list_len < 0)
             goto out;
         desc_list_len &= 0xfff;
-        desc_list_end  = p + desc_list_len;
+        desc_list_end  = p + desc_list_len; 
         if (desc_list_end > p_end)
             goto out;
         for (;;) {
@@ -2970,7 +2970,7 @@ static int handle_packets(MpegTSContext *ts, int64_t nb_packets)
 {
     AVFormatContext *s = ts->stream;
     uint8_t packet[TS_PACKET_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
-    const uint8_t *data;
+    const uint8_t *data;        // watt:指向AVIOContext->buf_ptr
     int64_t packet_num;
     int ret = 0;
 

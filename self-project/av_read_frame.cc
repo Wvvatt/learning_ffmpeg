@@ -46,6 +46,7 @@ int main(int argc, char** argv)
         logging("avformat_find_stream_info failed!");
         return -1;
     }
+    av_dump_format(in_fmtctx, 0, filename, 0);
 
     AVFrame *frame = av_frame_alloc();
     if(!frame){

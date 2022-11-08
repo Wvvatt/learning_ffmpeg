@@ -5,6 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "gdb-read",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/self-project/av_read_frame",
+            "args": [
+                "${workspaceFolder}/self-project/h264_aac_2.6M_dance.ts"
+            ],
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
+                }
+            ],
+            "cwd": "${workspaceFolder}/self-project"
+        },
+        {
             "name": "gdb-hello",
             "type": "cppdbg",
             "request": "launch",
