@@ -148,7 +148,7 @@ typedef struct AVIOContext {
     int (*read_pause)(void *opaque, int pause);
     int64_t (*read_seek)(void *opaque, int stream_index, int64_t timestamp, int flags);
     int seekable;
-    int direct;
+    int direct;                    // 是否启用buffer对数据进行缓冲，如果启用buffer，read之前都会先调用fill_buffer对buffer进行填充
     const char *protocol_whitelist;
     const char *protocol_blacklist;
     int (*write_data_type)(void *opaque, uint8_t *buf, int buf_size, enum AVIODataMarkerType type, int64_t time);

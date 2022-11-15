@@ -278,4 +278,5 @@ av_read_frame(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\f
 ```
 - `ff_read_packet`调用了`s->iformat->read_packet`，这是个接口，挂上了`ff_mpegts_demuxer.mpegts_read_packet`
 - `ff_mpegts_demuxer.mpegts_read_packet`读取buffer内容时调用`avio_read`，一直调用到`(AVIOContext)s.read_packet`，这是个函数指针，挂上URLContext的`ffurl_read`，最后调用到`(URLContext)h.prot.url_read`，这是个接口，挂上`ff_file_protocol.file_read`
+- `(AVIOContext)s.direct`控制是否直接读取。`fill_buffer`这个函数的作用是调用真正的读取函数之后，将数据放在`(AVIOContext)s.buffer`中，之后通过`avio_rxx`等函数对`buffer`进行读取。
 - 总的路径就是调用解封装器的`read_packet`，这个函数内部调用`file_read`对文件进行读取然后处理。
