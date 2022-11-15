@@ -30,7 +30,7 @@ char av_error[AV_ERROR_MAX_STRING_SIZE] = { 0 };
 int main(int argc, char** argv)
 {
     if(argc < 2){
-        logging("please specify a file name:\n ./hello [filename]");
+        logging("please specify a file name:\n ./av_read_frame [filename]");
         return -1;
     }
     const char *filename = argv[1];
