@@ -84,8 +84,8 @@ typedef void SectionCallback (MpegTSFilter *f, const uint8_t *buf, int len);
 typedef void SetServiceCallback (void *opaque, int ret);
 
 typedef struct MpegTSSectionFilter {
-    int section_index;
-    int section_h_size;
+    int section_index;      // watt:section已经写了多少字节
+    int section_h_size;     // section_length + 3
     int last_ver;
     unsigned crc;
     unsigned last_crc;
@@ -449,7 +449,7 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
                 return;
             tss->section_h_size = len;
         }
-
+        // watt: 可以拼凑出一个完整的section了，就调用section_cb
         if (tss->section_h_size != -1 &&
             tss->section_index >= offset + tss->section_h_size) {
             int crc_valid = 1;
@@ -457,7 +457,7 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
 
             if (tss->check_crc) {
                 crc_valid = !av_crc(av_crc_get_table(AV_CRC_32_IEEE), -1, cur_section_buf, tss->section_h_size);
-                if (tss->section_h_size >= 4)
+                if (tss->section_h_size >= 4)       // watt:取到section最后4个字节是crc
                     tss->crc = AV_RB32(cur_section_buf + tss->section_h_size - 4);
 
                 if (crc_valid) {
@@ -642,10 +642,10 @@ static int get_packet_size(AVFormatContext* s)
     }
     return AVERROR_INVALIDDATA;
 }
-// watt:此结构包含所有表共有的字段
+// section header，section的唯一标识
 typedef struct SectionHeader {
     uint8_t tid;
-    uint16_t id;
+    uint16_t id;        // watt：对于PAT是transport_stream_id，对于PMT是program_number。因为PID可以服用，所以这是PSI表的唯一标识。
     uint8_t version;
     uint8_t current_next;
     uint8_t sec_num;
@@ -2307,7 +2307,7 @@ static int is_pes_stream(int stream_type, uint32_t prog_reg_desc)
     return !(stream_type == 0x13 ||
              (stream_type == 0x86 && prog_reg_desc == AV_RL32("CUEI")) );
 }
-
+// watt:传入pmt_cb的是一个完整的pmt section
 static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
@@ -2809,7 +2809,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet, int64_t pos)
             pc->flags |= AV_PKT_FLAG_CORRUPT;
         }
     }
-
+    // watt:transport_error_indicator字段为1，传输错误
     if (packet[1] & 0x80) {
         av_log(ts->stream, AV_LOG_DEBUG, "Packet had TEI flag set; marking as corrupt\n");
         if (tss->type == MPEGTS_PES) {
@@ -2840,7 +2840,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet, int64_t pos)
     if (tss->type == MPEGTS_SECTION) {
         if (is_start) {
             /* pointer field present */
-            len = *p++;
+            len = *p++;             // watt:取pointer_field的值，一般为0x00
             if (len > p_end - p)
                 return 0;
             if (len && cc_ok) {
