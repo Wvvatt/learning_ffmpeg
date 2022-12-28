@@ -2360,13 +2360,13 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (!ts->skip_clear)
         clear_avprogram(ts, h->id);
     clear_program(prg);
-    add_pid_to_program(prg, ts->current_pid);
+    add_pid_to_program(prg, ts->current_pid);   // watt:pmt的第1个PID是pmt_pid
 
     pcr_pid = get16(&p, p_end);
     if (pcr_pid < 0)
         return;
     pcr_pid &= 0x1fff;
-    add_pid_to_program(prg, pcr_pid);
+    add_pid_to_program(prg, pcr_pid);           // watt:pmt的第2个PID是pcr_pid
     update_av_program_info(ts->stream, h->id, pcr_pid, h->version);
 
     av_log(ts->stream, AV_LOG_TRACE, "pcr_pid=0x%x\n", pcr_pid);
@@ -2375,7 +2375,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (program_info_length < 0)
         return;
     program_info_length &= 0xfff;
-    while (program_info_length >= 2) {
+    while (program_info_length >= 2) {      // watt:解析program的descriptors
         uint8_t tag, len;
         tag = get8(&p, p_end);
         len = get8(&p, p_end);
@@ -2407,10 +2407,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (!ts->pkt)
         ts->stop_parse = 2;
 
-    if (prg)        // watt:这个pmt的programid可以找到pmt
+    if (prg)        // watt: 节目是在pat_cb中创建的，到这里判断该节目可以找到对应的pmt
         prg->pmt_found = 1;
 
-      for (i = 0; i < MAX_STREAMS_PER_PROGRAM; i++) {     // watt:从这里开始解析每个流的内容
+    for (i = 0; i < MAX_STREAMS_PER_PROGRAM; i++) {     // watt:从这里开始解析每个流的内容
         st = 0;
         pes = NULL;
         stream_type = get8(&p, p_end);
@@ -2504,7 +2504,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         desc_list_end  = p + desc_list_len; 
         if (desc_list_end > p_end)
             goto out;
-        for (;;) {
+        for (;;) {      // watt:解析每个流的descriptor
             if (ff_parse_mpeg2_descriptor(ts->stream, st, stream_type, &p,
                                           desc_list_end, mp4_descr,
                                           mp4_descr_count, pid, ts) < 0)
@@ -2552,12 +2552,12 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (ts->skip_changes)
         return;
 
-    if (skip_identical(h, tssf))
+    if (skip_identical(h, tssf))        // watt: 跳过相同的section，当一个PAT表分段成多个section时，只取未重复的section进行更新
         return;
     ts->stream->ts_id = h->id;
 
     for (;;) {
-        sid = get16(&p, p_end);
+        sid = get16(&p, p_end);         // watt：拿到program_number
         if (sid < 0)
             break;
         pmt_pid = get16(&p, p_end);
