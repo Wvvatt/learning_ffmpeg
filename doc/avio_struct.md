@@ -307,3 +307,26 @@ extern const URLProtocol ff_libzmq_protocol;
 extern const URLProtocol ff_ipfs_protocol;
 extern const URLProtocol ff_ipns_protocol;
 ```
+
+#### RTMP读取堆栈
+RTMP基于TCP连接时，数据读取会一直调用到tcp_read
+```
+libavformat.so.59!tcp_read(URLContext * h, uint8_t * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\tcp.c:238)
+libavformat.so.59!retry_transfer_wrapper(URLContext * h, uint8_t * buf, int size, int size_min, int (*)(URLContext *, uint8_t *, int) transfer_func) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\avio.c:370)
+libavformat.so.59!ffurl_read_complete(URLContext * h, unsigned char * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\avio.c:412)
+libavformat.so.59!rtmp_packet_read_one_chunk(URLContext * h, RTMPPacket * p, int chunk_size, RTMPPacket ** prev_pkt_ptr, int * nb_prev_pkt, uint8_t hdr) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\rtmppkt.c:199)
+libavformat.so.59!ff_rtmp_packet_read_internal(URLContext * h, RTMPPacket * p, int chunk_size, RTMPPacket ** prev_pkt, int * nb_prev_pkt, uint8_t hdr) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\rtmppkt.c:295)
+libavformat.so.59!ff_rtmp_packet_read(URLContext * h, RTMPPacket * p, int chunk_size, RTMPPacket ** prev_pkt, int * nb_prev_pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\rtmppkt.c:159)
+libavformat.so.59!get_packet(URLContext * s, int for_header) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\rtmpproto.c:2420)
+libavformat.so.59!rtmp_read(URLContext * s, uint8_t * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\rtmpproto.c:2916)
+libavformat.so.59!retry_transfer_wrapper(URLContext * h, uint8_t * buf, int size, int size_min, int (*)(URLContext *, uint8_t *, int) transfer_func) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\avio.c:370)
+libavformat.so.59!ffurl_read(URLContext * h, unsigned char * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\avio.c:405)
+libavformat.so.59!read_packet_wrapper(AVIOContext * s, uint8_t * buf, int size) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:533)
+libavformat.so.59!fill_buffer(AVIOContext * s) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:577)
+libavformat.so.59!avio_r8(AVIOContext * s) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\aviobuf.c:635)
+libavformat.so.59!flv_read_packet(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\flvdec.c:1032)
+libavformat.so.59!ff_read_packet(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:571)
+libavformat.so.59!read_frame_internal(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:1245)
+libavformat.so.59!av_read_frame(AVFormatContext * s, AVPacket * pkt) (\home\watt\learning_ffmpeg\ffmpeg-5.1\libavformat\demux.c:1450)
+main(int argc, char ** argv) (\home\watt\learning_ffmpeg\self-project\av_read_frame.cc:62)
+```

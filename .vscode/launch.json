@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/self-project/av_read_frame",
             "args": [
-                "${workspaceFolder}/self-project/h264_aac_2.6M_dance.ts"
+                "rtmp://192.165.153.198:1935/live/udp2rtmp"
             ],
             "environment": [
                 {
@@ -18,7 +18,14 @@
                     "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
                 }
             ],
-            "cwd": "${workspaceFolder}/self-project"
+            "cwd": "${workspaceFolder}/self-project",
+            "setupCommands": [
+                { // 鼠标悬挂查看变量值，使用pretty print配置
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
         },
         {
             "name": "gdb-hello",
@@ -35,6 +42,32 @@
                 }
             ],
             "cwd": "${workspaceFolder}/self-project"
+        },
+        {
+            "name": "gdb-remuxer",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/self-project/remuxer",
+            "args": [
+                "-i",
+                "${workspaceFolder}/self-project/h264_aac_2.6M_dance.ts",
+                "-o",
+                "./remuxer.ts"
+            ],
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
+                }
+            ],
+            "cwd": "${workspaceFolder}/self-project",
+            "setupCommands": [
+                { // 鼠标悬挂查看变量值，使用pretty print配置
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
         },
         {
             "name": "gdb-decoder",

@@ -5,6 +5,9 @@
         "*.tcc": "cpp",
         "numeric": "cpp",
         "ostream": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "adts_header.h": "c",
+        "atomic": "c",
+        "string": "cpp"
     }
 }
