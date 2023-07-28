@@ -243,8 +243,8 @@ enum MpegTSState {
 };
 
 /* enough for PES header + length */
-#define PES_START_SIZE  6
-#define PES_HEADER_SIZE 9
+#define PES_START_SIZE  6           // watt : PES的开始6个字节固定不变
+#define PES_HEADER_SIZE 9           // watt : 如果有PES header，那么还有3个字节包含了各种flag及header_data_length数据
 #define MAX_PES_HEADER_SIZE (9 + 255)
 
 typedef struct PESContext { // watt:该结构体挂在MpegTsPesFilter.opaque上
@@ -1042,7 +1042,7 @@ static int new_pes_packet(PESContext *pes, AVPacket *pkt)
     if (!sd)
         return AVERROR(ENOMEM);
     *sd = pes->stream_id;
-
+    
     return 0;
 }
 
@@ -1144,7 +1144,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
     PESContext *pes   = filter->u.pes_filter.opaque;
     MpegTSContext *ts = pes->ts;
     const uint8_t *p;
-    int ret, len;
+    int ret, len; 
 
     if (!ts->pkt)
         return 0;
@@ -1265,7 +1265,7 @@ skip:
                 const uint8_t *r;
                 unsigned int flags, pes_ext, skip;
 
-                flags = pes->header[7];
+                flags = pes->header[7];             
                 r = pes->header + 9;
                 pes->pts = AV_NOPTS_VALUE;
                 pes->dts = AV_NOPTS_VALUE;
@@ -1280,7 +1280,7 @@ skip:
                 }
                 pes->extended_stream_id = -1;
                 if (flags & 0x01) { /* PES extension */
-                    pes_ext = *r++;
+                    pes_ext = *r++;                 
                     /* Skip PES private data, program packet sequence counter and P-STD buffer */
                     skip  = (pes_ext >> 4) & 0xb;
                     skip += skip & 0x9;
@@ -1393,13 +1393,13 @@ skip:
                     // not sure if this is legal in ts but see issue #2392
                     buf_size = max_packet_size;
                 }
-
-                if (!pes->buffer) {
+                // watt : 没有buffer就获得一个
+                if (!pes->buffer) {        
                     pes->buffer = buffer_pool_get(ts, max_packet_size);
                     if (!pes->buffer)
                         return AVERROR(ENOMEM);
                 }
-
+                // watt : 正经事，拷贝p中的数据给pes->buffer
                 memcpy(pes->buffer->data + pes->data_index, p, buf_size);
                 pes->data_index += buf_size;
                 /* emit complete packets with known packet size
@@ -2838,8 +2838,8 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet, int64_t pos)
     }
     // watt:判断是section还是pes
     if (tss->type == MPEGTS_SECTION) {
-        if (is_start) {
-            /* pointer field present */
+        if (is_start) {     
+            /* pointer field present */     // watt : 当含有PSI section的第一个字节时，is_start为1
             len = *p++;             // watt:取pointer_field的值，一般为0x00
             if (len > p_end - p)
                 return 0;

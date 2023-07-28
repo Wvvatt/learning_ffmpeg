@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 
-void print_split(const std::string &name)
+static void print_split(const std::string &name)
 {
     std::cout << "--------------\n";
     std::cout << "---  " << name << "  ---\n";
