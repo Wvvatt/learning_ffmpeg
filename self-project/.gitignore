@@ -3,6 +3,6 @@
 !makefile
 !*.cc
 !*.h
-!*.ts
 !*.sh
 !*.c
+!/data/*

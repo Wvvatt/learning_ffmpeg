@@ -1,134 +1,152 @@
 {
-    // 使用 IntelliSense 了解相关属性。 
-    // 悬停以查看现有属性的描述。
-    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
+  // 使用 IntelliSense 了解相关属性。
+  // 悬停以查看现有属性的描述。
+  // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "gdb-read",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/self-project/av_read_frame",
+      "args": ["rtmp://192.165.153.198:1935/live/udp2rtmp"],
+      "environment": [
         {
-            "name": "gdb-read",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/self-project/av_read_frame",
-            "args": [
-                "rtmp://192.165.153.198:1935/live/udp2rtmp"
-            ],
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
-                }
-            ],
-            "cwd": "${workspaceFolder}/self-project",
-            "setupCommands": [
-                { // 鼠标悬挂查看变量值，使用pretty print配置
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "gdb-hello",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/self-project/hello",
-            "args": [
-                "${workspaceFolder}/self-project/h264_aac_2.6M_dance.ts"
-            ],
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
-                }
-            ],
-            "cwd": "${workspaceFolder}/self-project"
-        },
-        {
-            "name": "gdb-remuxer",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/self-project/remuxer",
-            "args": [
-                "-i",
-                "${workspaceFolder}/self-project/h264_aac_2.6M_dance.ts",
-                "-o",
-                "./remuxer.ts"
-            ],
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
-                }
-            ],
-            "cwd": "${workspaceFolder}/self-project",
-            "setupCommands": [
-                { // 鼠标悬挂查看变量值，使用pretty print配置
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "gdb-decoder",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/self-project/decoder",
-            "args": [
-                "${fileDirname}/h264_aac_2.6M_dance.ts"
-            ],
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
-                }
-            ],
-            "cwd": "${workspaceFolder}/self-project"
-        },
-        {
-            "name": "gdb-transcode",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/self-project/transcode",
-            "args": [
-                "-i",
-                "${fileDirname}/h264_aac_2.6M_dance.ts",
-                "--vcodec",
-                "libx264",
-                "--acodec",
-                "aac",
-                "-o",
-                "${fileDirname}/trans.ts"
-            ],
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
-                }
-            ],
-            "cwd": "${workspaceFolder}/self-project"
-        },
-        {
-            "name": "gdb-ffmpeg",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/bin/ffmpeg",
-            "args": [
-                "-i",
-                "${workspaceFolder}/self-project/h264_aac_2.6M_dance.ts",
-                "-vcodec",
-                "h264",
-                "-acodec",
-                "copy",
-                "${workspaceFolder}/trans.ts"
-            ],
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
-                }
-            ],
-            "cwd": "${workspaceFolder}/self-project"
+          "name": "LD_LIBRARY_PATH",
+          "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
         }
-    ]
+      ],
+      "cwd": "${workspaceFolder}/self-project",
+      "setupCommands": [
+        {
+          // 鼠标悬挂查看变量值，使用pretty print配置
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "gdb-hello",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/self-project/hello",
+      "args": ["${workspaceFolder}/self-project/data/avc_720p_aac_4m_bmw.ts"],
+      "environment": [
+        {
+          "name": "LD_LIBRARY_PATH",
+          "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
+        }
+      ],
+      "cwd": "${workspaceFolder}/self-project"
+    },
+    {
+      "name": "gdb-remuxer",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/self-project/remuxer",
+      "args": [
+        "-i",
+        "${workspaceFolder}/self-project/data/avc_720p_aac_4m_bmw.ts",
+        "-o",
+        "./remuxer.ts"
+      ],
+      "environment": [
+        {
+          "name": "LD_LIBRARY_PATH",
+          "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
+        }
+      ],
+      "cwd": "${workspaceFolder}/self-project",
+      "setupCommands": [
+        {
+          // 鼠标悬挂查看变量值，使用pretty print配置
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "gdb-decoder",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/self-project/decoder",
+      "args": ["${fileDirname}/data/avc_720p_aac_4m_bmw.ts"],
+      "environment": [
+        {
+          "name": "LD_LIBRARY_PATH",
+          "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
+        }
+      ],
+      "cwd": "${workspaceFolder}/self-project"
+    },
+    {
+      "name": "gdb-transcode",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/self-project/transcode",
+      "args": [
+        "-i",
+        "${fileDirname}/data/avc_720p_aac_4m_bmw.ts",
+        "--vcodec",
+        "libx264",
+        "--acodec",
+        "aac",
+        "-o",
+        "${fileDirname}/trans.ts"
+      ],
+      "environment": [
+        {
+          "name": "LD_LIBRARY_PATH",
+          "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
+        }
+      ],
+      "cwd": "${workspaceFolder}/self-project"
+    },
+    {
+      "name": "gdb-filter",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/self-project/filter",
+      "args": ["${workspaceFolder}/self-project/data/avc_720p_aac_4m_bmw.mp4"],
+      "environment": [
+        {
+          "name": "LD_LIBRARY_PATH",
+          "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
+        }
+      ],
+      "cwd": "${workspaceFolder}/self-project",
+      "setupCommands": [
+        {
+          // 鼠标悬挂查看变量值，使用pretty print配置
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "gdb-ffmpeg",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/ffmpeg",
+      "args": [
+        "-i",
+        "${workspaceFolder}/self-project/avc_720p_aac_4m_bmw.ts",
+        "-vcodec",
+        "h264",
+        "-acodec",
+        "copy",
+        "${workspaceFolder}/trans.ts"
+      ],
+      "environment": [
+        {
+          "name": "LD_LIBRARY_PATH",
+          "value": "${workspaceFolder}/build/lib:${workspaceFolder}/x264/lib"
+        }
+      ],
+      "cwd": "${workspaceFolder}/self-project"
+    }
+  ]
 }
