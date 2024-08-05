@@ -1,8 +1,9 @@
 *
 !.gitignore
 !makefile
-!*.cc
-!*.h
-!*.sh
-!*.c
+!**/*.cc
+!**/*.h
+!**/*.sh
+!**/*.c
 !/data/*
+!/pipeline

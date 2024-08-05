@@ -4,7 +4,7 @@ LDFLAG=
 DEP_INCLUDE=-I../build/include
 DEP_LIB=-lpthread -L../build/lib -lavformat -lavcodec -lavutil -Wl,-rpath-link=../build/lib:../x264/lib
 
-SOURCE = $(wildcard *.cc)
+SOURCE = $(shell find . -name '*.cc')
 OBJS = $(patsubst %.cc,%.o,${SOURCE})
 TARGETS = $(patsubst %.o,%,${OBJS})
 
@@ -22,4 +22,4 @@ ${TARGETS}:%:%.o
 
 .PHONY:clean
 clean:
-	rm -rf *.o $(TARGETS)
+	rm -rf $(OBJS) $(TARGETS)
